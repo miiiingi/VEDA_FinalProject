@@ -116,7 +116,8 @@ public:
 
             // ID 0x123 메시지 처리
             if (frame.can_id == 0x123) {
-                if (frame.data[0] == 1) {
+                if (frame.data[2] == 1) {
+                    printf("얼굴 인식 성공!\n");
                     printf("비밀번호 입력 성공!\n");    //Qt 메세지로 띄우기
                     printf("모터 작동 시작 (PWM: %d)\n", FIXED_SPEED);
                     setMotorSpeed(FIXED_SPEED);
@@ -128,7 +129,7 @@ public:
                     setMotorSpeed(0);
                     printf("잠금 장치 구동 완료\n");
                 }
-                else if (frame.data[0] == 0) {
+                else if (frame.data[2] == 0) {
                     setMotorSpeed(0);
                     printf("비밀번호가 틀렸습니다.\n");     //Qt 메세지로 띄우기
                 }
