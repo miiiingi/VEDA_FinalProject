@@ -13,8 +13,10 @@
 
 #define MOTOR_PIN 27    // GPIO 27 사용
 #define PWM_RANGE 255   // PWM 범위 설정
-#define FIXED_SPEED 120 // 고정 PWM 값
+#define FIXED_SPEED 120 // 정방향 PWM 값
+#define REVERSE_SPEED -120 // 역방향 PWM 값
 #define CAN_INTERFACE "can0" // CAN 인터페이스 이름
+#define MOTOR_DELAY 5 // 모터 방향 전환 전 대기 시간(초)
 
 class MotorController {
 private:
@@ -88,11 +90,20 @@ public:
 
     void setMotorSpeed(int speed) {
         // 속도값 범위 제한
-        if (speed < 0) speed = 0;
+        if (speed < -PWM_RANGE) speed = -PWM_RANGE;
         if (speed > PWM_RANGE) speed = PWM_RANGE;
 
         // PWM 신호 출력
-        softPwmWrite(motorPin, speed);
+        softPwmWrite(motorPin, abs(speed));  // PWM은 절대값으로 설정
+        
+        // 속도가 음수면 역방향 회전을 의미
+        if (speed < 0) {
+            printf("모터 역방향 회전 (PWM: %d)\n", abs(speed));
+        } else if (speed > 0) {
+            printf("모터 정방향 회전 (PWM: %d)\n", speed);
+        } else {
+            printf("모터 정지\n");
+        }
     }
 
     void processCANMessages() {
@@ -119,13 +130,22 @@ public:
                 if (frame.data[2] == 1) {
                     printf("얼굴 인식 성공!\n");
                     printf("비밀번호 입력 성공!\n");    //Qt 메세지로 띄우기
-                    printf("모터 작동 시작 (PWM: %d)\n", FIXED_SPEED);
+                    
+                    // 정방향으로 모터 구동 (잠금 해제)
+                    printf("잠금 해제 - 모터 정방향 구동 시작 (PWM: %d)\n", FIXED_SPEED);
                     setMotorSpeed(FIXED_SPEED);
-                    
-                    // 1초 대기
                     sleep(1);
+                    setMotorSpeed(0);
+
+                    // 5초 대기
+                    sleep(MOTOR_DELAY);
                     
-                    // 1초 후 모터 정지
+                    // 역방향으로 모터 구동 (자동 잠금)
+                    printf("자동 잠금 - 모터 역방향 구동 시작 (PWM: %d)\n", REVERSE_SPEED);
+                    setMotorSpeed(REVERSE_SPEED);
+                    
+                    // 1초 대기 후 정지
+                    sleep(1);
                     setMotorSpeed(0);
                     printf("잠금 장치 구동 완료\n");
                 }
@@ -149,6 +169,5 @@ int main() {
     while(1) {
         motor.processCANMessages();
     }
-
     return 0;
 }
