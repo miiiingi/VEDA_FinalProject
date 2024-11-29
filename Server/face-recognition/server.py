@@ -23,29 +23,65 @@ class TCPServer(threading.Thread):
         self.client_lock = threading.Lock()
         self.running = True
         self.result_queue = result_queue
+        self.tcp_receive_signal = pyqtSignal(np.ndarray)
+
+    def receive_data(self, client_socket):
+        while self.running:
+            try:
+                data = client_socket.recv(3)
+                if not data or len(data) != 3:
+                    break
+                    
+                bit_array = np.frombuffer(data, dtype=np.uint8)
+                print(f'bit array: {bit_array}')
+                self.tcp_receive_signal.emit(bit_array)
+            except:
+                break
+
+    def send_data(self, client_socket):
+        while self.running:
+            try:
+                start_time = time.time()
+                counts = Counter()
+                while time.time() - start_time < 1:
+                    try:
+                        name = self.result_queue.get_nowait()
+                        result = "0" if name == "Unknown" else "1"
+                        counts[result] += 1
+                    except queue.Empty:
+                        time.sleep(0.1)
+                
+                if counts:
+                    most_common = counts.most_common(1)[0][0]
+                    client_socket.send(most_common.encode())
+                else:
+                    client_socket.send(b"0")
+            except:
+                break
 
     def handle_client(self, client_socket, client_addr):
         print(f"Client connected from {client_addr[0]}")
         try:
-            while self.running:
-                try:
-                    start_time = time.time()
-                    counts = Counter()
-                    while time.time() - start_time < 1:
-                        try:
-                            name = self.result_queue.get_nowait()
-                            result = "0" if name == "Unknown" else "1"
-                            counts[result] += 1
-                        except queue.Empty:
-                            time.sleep(0.1)
-                    
-                    if counts:
-                        most_common = counts.most_common(1)[0][0]
-                        client_socket.send(most_common.encode())
-                    else:
-                        client_socket.send(b"0")
-                except:
-                    break
+            # 수신 스레드 시작
+            receive_thread = threading.Thread(
+                target=self.receive_data,
+                args=(client_socket,)
+            )
+            receive_thread.daemon = True
+            receive_thread.start()
+
+            # 송신 스레드 시작
+            send_thread = threading.Thread(
+                target=self.send_data,
+                args=(client_socket,)
+            )
+            send_thread.daemon = True
+            send_thread.start()
+
+            # 스레드 종료 대기
+            receive_thread.join()
+            send_thread.join()
+
         finally:
             with self.client_lock:
                 if client_socket in self.client_sockets:
@@ -67,6 +103,7 @@ class TCPServer(threading.Thread):
                 client_thread.start()
             except:
                 break
+
 
     def stop(self):
         self.running = False
@@ -160,9 +197,11 @@ class FaceRecognitionApp(QMainWindow):
         self.face_recognition_thread.image_update_signal.connect(self.update_frame)
         self.face_recognition_thread.access_status_signal.connect(self.update_access_status)
         self.tcp_server = TCPServer(self.result_queue)
+        self.tcp_server.tcp_receive_signal.connect(self.change_led_status)
         
         self.status_timer = QTimer()
         self.status_timer.timeout.connect(self.reset_status)
+
     def initUI(self):
         self.setWindowTitle('Face Recognition')
         self.setGeometry(100, 100, 1000, 600)
@@ -247,9 +286,30 @@ class FaceRecognitionApp(QMainWindow):
         # 레이아웃에 추가
         layout.addLayout(status_layout)
         central_widget.setLayout(layout)
+    
+    def convert_signal(tcp_received_signal):
+        if tcp_received_signal == 1:
+            return 'status_doorbell'
+        elif tcp_received_signal == 2:
+            return 'status_buzzer'
+        elif tcp_received_signal == 3:
+            return 'status_led1'
+        elif tcp_received_signal == 4:
+            return 'status_led2'
+        elif tcp_received_signal == 5:
+            return 'status_led3'
+        elif tcp_received_signal == 6:
+            return 'status_led6'
+        else:
+            return 'status_off'
 
-    def change_led_status(self, led_name, is_on=True):
-        frame = getattr(self, f'{led_name}_frame', None)
+    def change_led_status(self, tcp_received_signal):
+        converted_signal = convert_signal(tcp_received_signal)
+        if converted_signal != 'status_off':
+            is_on = True
+        else:
+            is_on = False 
+        frame = getattr(self, f'{converted_signal}_frame', None)
         if frame:
             if is_on:
                 # 해당 LED의 활성 색상으로 변경
@@ -263,7 +323,7 @@ class FaceRecognitionApp(QMainWindow):
                 }
                 frame.setStyleSheet(f"""
                     QLabel {{
-                        background-color: {color_map.get(led_name, '#e0e0e0')};
+                        background-color: {color_map.get(converted_signal, '#e0e0e0')};
                         border: 2px solid #999999;
                         border-radius: 50%;
                         min-width: 80px;
@@ -281,6 +341,7 @@ class FaceRecognitionApp(QMainWindow):
                         min-height: 80px;
                     }
                 """)
+
     def update_access_status(self, status):
         if status == "1":
             self.status_frame.setStyleSheet("""
