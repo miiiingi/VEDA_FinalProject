@@ -79,10 +79,12 @@ public:
             exit(1);
         }
 
-        // CAN 필터 설정 (ID: 0x123만 수신)
-        struct can_filter rfilter[1];
-        rfilter[0].can_id = 0x123;
+        // CAN 필터 설정 (ID: 0x001, 0x002, 0x123 수신)
+        struct can_filter rfilter[2];
+        rfilter[0].can_id = 0x001;
         rfilter[0].can_mask = CAN_SFF_MASK;
+        rfilter[1].can_id = 0x002;
+        rfilter[1].can_mask = CAN_SFF_MASK;
         setsockopt(canSocket, SOL_CAN_RAW, CAN_RAW_FILTER, &rfilter, sizeof(rfilter));
 
         printf("CAN 초기화 완료\n");
@@ -126,8 +128,9 @@ public:
             }
 
             // ID 0x123 메시지 처리
-            if (frame.can_id == 0x123) {
-                if (frame.data[2] == 1) {
+            if (frame.can_id == 0x001) {
+                // 얼굴 인식 성공, 비밀번호 입력 성공 시
+                if (frame.data[0] == 0b00000011) {
                     printf("얼굴 인식 성공!\n");
                     printf("비밀번호 입력 성공!\n");    //Qt 메세지로 띄우기
                     
@@ -140,6 +143,12 @@ public:
                     // 5초 대기
                     sleep(MOTOR_DELAY);
                     
+                    // 자동 잠금 메시지 전송
+                    frame.can_id = 0x002;
+                    frame.can_dlc = 3;
+                    frame.data[0] = 0b00000100;
+                    write(canSocket, &frame, sizeof(frame));
+
                     // 역방향으로 모터 구동 (자동 잠금)
                     printf("자동 잠금 - 모터 역방향 구동 시작 (PWM: %d)\n", REVERSE_SPEED);
                     setMotorSpeed(REVERSE_SPEED);
@@ -149,9 +158,23 @@ public:
                     setMotorSpeed(0);
                     printf("잠금 장치 구동 완료\n");
                 }
-                else if (frame.data[2] == 0) {
+                // 얼굴x, 비번x
+                else if (frame.data[0] == 0b00000000) {
                     setMotorSpeed(0);
-                    printf("비밀번호가 틀렸습니다.\n");     //Qt 메세지로 띄우기
+                    printf("얼굴이 일치하지 않습니다.\n");
+                    printf("비밀번호가 틀렸습니다.\n");
+                }
+                // 얼굴o, 비번x
+                else if (frame.data[0] == 0b00000001) {
+                    setMotorSpeed(0);
+                    printf("얼굴 인식 성공!\n");
+                    printf("비밀번호가 틀렸습니다.\n");
+                }
+                // 얼굴x, 비번o
+                else if (frame.data[0] == 0b00000010) {
+                    setMotorSpeed(0);
+                    printf("얼굴이 일치하지 않습니다.\n");
+                    printf("비밀번호 입력 성공!\n");
                 }
             }
         }
