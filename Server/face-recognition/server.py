@@ -11,32 +11,19 @@ import numpy as np
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QLabel, QHBoxLayout, 
                            QPushButton, QWidget)
 from PyQt6.QtGui import QImage, QPixmap
-from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer, QObject, pyqtSlot
+from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer, QObject, pyqtSlot, QMutex
 
-class SignalEmitter(QObject):
-    tcp_receive_signal = pyqtSignal(int)
-
-class TCPServer(threading.Thread):
+class TCPServer(QObject):
+    emit_tcp_signal = pyqtSignal(bytearray)
     def __init__(self, result_queue, parent=None, host='0.0.0.0', port=5100):
         super().__init__()
         self.server_socket = None
         self.host = host
         self.port = port
         self.client_sockets = []
-        self.client_lock = threading.Lock()
+        self.client_lock = QMutex()
         self.running = True
         self.result_queue = result_queue
-        self.parent = parent
-
-    def emit_tcp_signal(self, bit_array):
-        # Use QMetaObject.invokeMethod to safely emit signal from main thread
-        if self.parent:
-            QMetaObject.invokeMethod(
-                self.parent, 
-                "change_led_status", 
-                Qt.ConnectionType.QueuedConnection, 
-                Q_ARG(np.ndarray, bit_array)
-            )
 
     def setup_socket(self):
         try:
@@ -52,16 +39,16 @@ class TCPServer(threading.Thread):
             raise
 
     def receive_data(self, client_socket):
+        BUFFER_SIZE=1024
         while self.running:
             try:
-                data = client_socket.recv(3)
-                if not data or len(data) != 3:
+                data = client_socket.recv(BUFFER_SIZE)
+                if not data:
+                    print("From Client Socket, Not Received Data")
                     break
                     
-                bit_array = np.frombuffer(data, dtype=np.uint8)
-                # Emit signal safely
-                print(f'bit array: {bit_array}')
-                self.emit_tcp_signal(bit_array)
+                byte_array = bytearray(data)
+                self.emit_tcp_signal.emit(byte_array)
             except:
                 break
 
@@ -86,34 +73,34 @@ class TCPServer(threading.Thread):
             except:
                 break
 
-    def handle_client(self, client_socket, client_addr):
-        print(f"Client connected from {client_addr[0]}")
-        try:
-            # 수신 스레드 시작
-            receive_thread = threading.Thread(
-                target=self.receive_data,
-                args=(client_socket,)
-            )
-            receive_thread.daemon = True
-            receive_thread.start()
+    # def handle_client(self, client_socket, client_addr):
+    #     print(f"Client connected from {client_addr[0]}")
+    #     try:
+    #         # 수신 스레드 시작
+    #         receive_thread = threading.Thread(
+    #             target=self.receive_data,
+    #             args=(client_socket,)
+    #         )
+    #         receive_thread.daemon = True
+    #         receive_thread.start()
 
-            # 송신 스레드 시작
-            send_thread = threading.Thread(
-                target=self.send_data,
-                args=(client_socket,)
-            )
-            send_thread.daemon = True
-            send_thread.start()
+    #         # 송신 스레드 시작
+    #         send_thread = threading.Thread(
+    #             target=self.send_data,
+    #             args=(client_socket,)
+    #         )
+    #         send_thread.daemon = True
+    #         send_thread.start()
 
-            # 스레드 종료 대기
-            receive_thread.join()
-            send_thread.join()
+    #         # 스레드 종료 대기
+    #         receive_thread.join()
+    #         send_thread.join()
 
-        finally:
-            with self.client_lock:
-                if client_socket in self.client_sockets:
-                    self.client_sockets.remove(client_socket)
-            client_socket.close()
+    #     finally:
+    #         with self.client_lock:
+    #             if client_socket in self.client_sockets:
+    #                 self.client_sockets.remove(client_socket)
+    #         client_socket.close()
 
     def run(self):
         try:
@@ -122,25 +109,28 @@ class TCPServer(threading.Thread):
             while self.running:
                 try:
                     client_socket, client_addr = self.server_socket.accept()
-                    with self.client_lock:
-                        self.client_sockets.append(client_socket)
+                    print(f"Client connected from {client_addr[0]}")
+                    self.client_lock.lock()
+                    self.client_sockets.append(client_socket)
+                    self.client_lock.unlock()
                     
-                    # 수신 및 송신 스레드 생성
-                    receive_thread = threading.Thread(target=self.receive_data, args=(client_socket,))
-                    send_thread = threading.Thread(target=self.send_data, args=(client_socket,))
+                    receive_worker = QThread()
+                    send_worker = QThread()
                     
-                    receive_thread.daemon = True
-                    send_thread.daemon = True
+                    receive_worker.run = lambda: self.receive_data(client_socket)
+                    send_worker.run = lambda: self.send_data(client_socket)
                     
-                    receive_thread.start()
-                    send_thread.start()
+                    receive_worker.start()
+                    send_worker.start()
                     
                 except socket.timeout:
                     # 타임아웃은 무시하고 계속 대기
                     continue
+
                 except Exception as e:
                     print(f"Connection error: {e}")
                     break
+
         except Exception as e:
             print(f"Server run error: {e}")
         finally:
@@ -148,17 +138,16 @@ class TCPServer(threading.Thread):
 
     def close_resources(self):
         self.running = False
-        # 모든 클라이언트 소켓 닫기
-        with self.client_lock:
-            for sock in self.client_sockets:
-                try:
-                    sock.shutdown(socket.SHUT_RDWR)
-                    sock.close()
-                except Exception as e:
-                    print(f"Error closing client socket: {e}")
-            self.client_sockets.clear()
+        self.client_lock.lock()
+        for sock in self.client_sockets:
+            try:
+                sock.shutdown(socket.SHUT_RDWR)
+                sock.close()
+            except Exception as e:
+                print(f"Error closing client socket: {e}")
+        self.client_sockets.clear()
+        self.client_lock.unlock()
         
-        # 서버 소켓 닫기
         if self.server_socket:
             try:
                 self.server_socket.close()
@@ -170,9 +159,10 @@ class TCPServer(threading.Thread):
 
     def stop(self):
         self.running = False
-        with self.client_lock:
-            for sock in self.client_sockets:
-                sock.close()
+        self.client_lock.lock()
+        for sock in self.client_sockets:
+            sock.close()
+        self.client_lock.unlock()
         self.server_socket.close()
 
 class FaceRecognitionThread(QObject):
@@ -260,19 +250,17 @@ class FaceRecognitionApp(QMainWindow):
         super().__init__()
         self.initUI()
         self.result_queue = queue.Queue()
-        self.thread = QThread()
+        self.face_recognition_thread = QThread()
         self.face_recognition_worker = FaceRecognitionThread(self.result_queue)
-        self.face_recognition_worker.moveToThread(self.thread)
-        self.thread.started.connect(self.face_recognition_worker.run)
+        self.face_recognition_worker.moveToThread(self.face_recognition_thread)
+        self.face_recognition_thread.started.connect(self.face_recognition_worker.run)
         self.face_recognition_worker.image_update_signal.connect(self.update_frame)
-        # self.face_recognition_thread.access_status_signal.connect(self.update_access_status)
-        # self.tcp_server = TCPServer(
-        #     result_queue=self.result_queue,
-        #     parent=self
-        # )
-        # self.tcp_server.emit_tcp_signal.connect(self.change_led_status)
-        # self.status_timer = QTimer()
-        # self.status_timer.timeout.connect(self.reset_status)
+
+        self.tcp_thread = QThread()
+        self.tcp_server = TCPServer(result_queue=self.result_queue)
+        self.tcp_server.moveToThread(self.tcp_thread)
+        self.tcp_thread.started.connect(self.tcp_server.run)
+        self.tcp_server.emit_tcp_signal.connect(self.change_led_status)
 
         # 버튼 연결
         self.start_button.clicked.connect(self.start_recognition)
@@ -366,20 +354,12 @@ class FaceRecognitionApp(QMainWindow):
     
     def start_recognition(self):
         try:
-            # 기존 스레드가 실행 중이라면 먼저 중지
-            # if self.face_recognition_thread and self.face_recognition_thread.is_alive():
-            #     self.face_recognition_thread.stop()
-            
-            # if self.tcp_server and self.tcp_server.is_alive():
-            #     self.tcp_server.close_resources()
-            # if self.thread.isRunning():
-            #     self.stop_recognition()
-
-            # 새 스레드 생성 및 시작
-            # self.tcp_server = TCPServer(self.result_queue)
-            self.thread.start()
-            # self.tcp_server.start()
-
+            if not self.face_recognition_thread.isRunning():
+                self.face_recognition_thread.start()
+            if not self.tcp_thread.isRunning():
+                self.tcp_thread.start()
+            self.start_button.setEnabled(False)
+            self.stop_button.setEnabled(True)
         except Exception as e:
             QMessageBox.critical(self, "오류", f"인식 시작 중 오류 발생: {e}")
 
@@ -407,7 +387,7 @@ class FaceRecognitionApp(QMainWindow):
             Qt.TransformationMode.SmoothTransformation
         ))
 
-        # 클래스 메서드로 변경
+    # 클래스 메서드로 변경
     def convert_signal(self, tcp_received_signal):
         signal_map = {
             1: 'status_doorbell',
@@ -417,10 +397,12 @@ class FaceRecognitionApp(QMainWindow):
             5: 'status_led3',
             6: 'status_led4'
         }
-        return signal_map.get(int(tcp_received_signal[0]), 'status_off')
+        return signal_map.get(tcp_received_signal, 'status_off')
     
     def change_led_status(self, tcp_received_signal):
-        converted_signal = self.convert_signal(tcp_received_signal)
+        print(f"tcp received signal: {int(chr(tcp_received_signal[0]))}")
+        converted_signal = self.convert_signal(int(chr(tcp_received_signal[0])))
+        print(f"converted signal: {converted_signal}")
         is_on = converted_signal != 'status_off'
         
         frame = getattr(self, f'{converted_signal}_frame', None)
