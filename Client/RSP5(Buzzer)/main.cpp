@@ -67,14 +67,22 @@ class LEDController {
 private:
     static constexpr int RLED = 1;
     static constexpr int GLED = 2;
-
+    static constexpr int BLED = 28;
+    static constexpr int YLED = 29;
+    
+    
     std::atomic<bool> ledG{false};
     std::atomic<bool> ledR{false};
+    std::atomic<bool> ledB{false};
+    std::atomic<bool> ledY{false};
+
 
 public:
     void initialize() {
         pinMode(RLED, OUTPUT);
         pinMode(GLED, OUTPUT);
+        pinMode(BLED, OUTPUT);
+        pinMode(YLED, OUTPUT);
     }
 
     void setGreenLED(bool state) {
@@ -83,6 +91,14 @@ public:
 
     void setRedLED(bool state) {
         ledR = state;
+    }
+
+    void setBlueLED(bool state) {
+        ledB = state;
+    }
+
+    void setYellowLED(bool state) {
+        ledY = state;
     }
 
     void manageLights() {
@@ -94,7 +110,15 @@ public:
             else if (ledR) {
                 blinkRedLED();
                 ledR = false;
-            } 
+            }
+            else if (ledB) {
+                blinkBlueLED();
+                ledB = false;
+            }
+            else if (ledY) {
+                blinkYellowLED();
+                ledY = false;
+            }
             std::this_thread::yield();
         }
     }
@@ -103,9 +127,9 @@ private:
     void blinkGreenLED() {
         for (int i = 0; i < 5; i++) {   
             digitalWrite(GLED, HIGH);
-            delay(100);
+            delay(1000);
             digitalWrite(GLED, LOW);
-            delay(100);
+            delay(1000);
         }        
         digitalWrite(GLED, LOW);
     }
@@ -118,6 +142,26 @@ private:
             delay(1000);
         }
         digitalWrite(RLED, LOW);
+    }
+
+    void blinkBlueLED() {
+        for (int i = 0; i < 5; i++) {
+            digitalWrite(BLED, HIGH);
+            delay(1000);
+            digitalWrite(BLED, LOW);
+            delay(1000);
+        }
+        digitalWrite(BLED, LOW);
+    }
+
+    void blinkYellowLED() {
+        for (int i = 0; i < 5; i++) {
+            digitalWrite(YLED, HIGH);
+            delay(1000);
+            digitalWrite(YLED, LOW);
+            delay(1000);
+        }
+        digitalWrite(YLED, LOW);
     }
 };
 
@@ -158,12 +202,16 @@ private:
     LEDController& ledController;
     SoundManager& soundManager;
     std::atomic<int> failCounter{0};
+    std::atomic<bool> running{true};
+    static constexpr int RECONNECT_DELAY_MS = 1000;  // 재연결 대기 시간 (1초)
 
 public:
     CANCommunicationManager(LEDController& lc, SoundManager& sm) 
         : ledController(lc), soundManager(sm) {}
 
     void initializeCANSocket() {
+        closeCANSocket();  // 기존 소켓이 있다면 닫기
+        
         system("sudo ifconfig can0 down");
         system("sudo ip link set can0 type can bitrate 100000");
         system("sudo ifconfig can0 up");
@@ -175,6 +223,7 @@ public:
 
         strcpy(ifr.ifr_name, "can0");
         if (ioctl(socketFd, SIOCGIFINDEX, &ifr) < 0) {
+            closeCANSocket();
             throw std::runtime_error("CAN interface configuration failed");
         }
 
@@ -182,6 +231,7 @@ public:
         addr.can_ifindex = ifr.ifr_ifindex;
 
         if (bind(socketFd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+            closeCANSocket();
             throw std::runtime_error("CAN socket bind failed");
         }
 
@@ -193,43 +243,75 @@ public:
     }
 
     void startCommunication() {
-        struct can_frame frame;
-        while (true) {
-            int nbytes = read(socketFd, &frame, sizeof(frame));
-            if (nbytes > 0) {
-                processCANMessage(frame);
+        while (running) {
+            try {
+                initializeCANSocket();
+                std::cout << "CAN connection ready" << std::endl;
+                
+                struct can_frame frame;
+                int nbytes = read(socketFd, &frame, sizeof(frame));
+                
+                if (nbytes > 0) {
+                    processCANMessage(frame);
+                } else {
+                    throw std::runtime_error("CAN read error");
+                }
             }
+            catch (const std::exception& e) {
+                std::cerr << "CAN error: " << e.what() << std::endl;
+            }
+            
+            closeCANSocket();
+            //std::cout << "CAN socket closed, waiting to reconnect..." << std::endl;
+            std::this_thread::sleep_for(std::chrono::milliseconds(RECONNECT_DELAY_MS));
         }
     }
 
+    void stop() {
+        running = false;
+    }
+
     ~CANCommunicationManager() {
-        if (socketFd != -1) {
-            close(socketFd);
-        }
+        stop();
+        closeCANSocket();
         system("sudo ifconfig can0 down");
     }
 
 private:
+    void closeCANSocket() {
+        if (socketFd != -1) {
+            close(socketFd);
+            socketFd = -1;
+        }
+    }
+
     void processCANMessage(const struct can_frame& frame) {
         std::cout << "CAN ID: 0x" << std::hex << frame.can_id 
                   << ", Data Length: " << std::dec << static_cast<int>(frame.can_dlc) 
                   << ", First Byte: " << static_cast<int>(frame.data[0]) << std::endl;
 
-        if (frame.data[0] == 1) {
+        if ((frame.data[0] == 1) && (frame.data[1] == 1)) {
             std::cout << "Open" << std::endl;    
             ledController.setGreenLED(true);
-            soundManager.playOpenTone();
+            //soundManager.playOpenTone();
         }
-        else if (frame.data[0] == 0) {
-            if (failCounter == 3) {
-                std::cout << "Alarm Triggered" << std::endl;
+        else {
+            if ((failCounter == 3)||((frame.data[1]==0)&&(frame.data[0]==0))) {
+                std::cout << "Alarm" << std::endl;
                 ledController.setRedLED(true);
-                soundManager.playAlarmTone();
+                //soundManager.playAlarmTone();
                 failCounter = 0;
             }
-            else {
-                std::cout << "Close" << std::endl;
-                soundManager.playFailTone();
+            else if (frame.data[0]==0){
+                std::cout << "Retry password" << std::endl;
+                ledController.setBlueLED(true);
+                //soundManager.playFailTone();
+                failCounter++;
+            }
+            else{
+                std::cout << "Retry face reconition" << std::endl;
+                ledController.setYellowLED(true);
+                //soundManager.playFailTone();
                 failCounter++;
             }
         }
