@@ -2,6 +2,7 @@
     "files": [
         "face_recognition_ui.py",
         "server.py",
+        "QLed.py",
         "face_recognition.ui"
     ]
 }

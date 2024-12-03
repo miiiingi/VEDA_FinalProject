@@ -15,16 +15,17 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QHBoxLayout, QLabel, QMainWindow,
-    QMenuBar, QPushButton, QSizePolicy, QSpacerItem,
-    QStatusBar, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QApplication, QGridLayout, QHBoxLayout, QLabel,
+    QLineEdit, QMainWindow, QMenuBar, QPushButton,
+    QSizePolicy, QStatusBar, QVBoxLayout, QWidget)
+
+from QLed import QLed
 
 class Ui_FaceRecognitionWindow(object):
     def setupUi(self, FaceRecognitionWindow):
         if not FaceRecognitionWindow.objectName():
             FaceRecognitionWindow.setObjectName(u"FaceRecognitionWindow")
-        FaceRecognitionWindow.resize(974, 862)
-        FaceRecognitionWindow.setAutoFillBackground(False)
+        FaceRecognitionWindow.resize(640, 480)
         self.centralwidget = QWidget(FaceRecognitionWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.horizontalLayout = QHBoxLayout(self.centralwidget)
@@ -41,149 +42,102 @@ class Ui_FaceRecognitionWindow(object):
 
         self.horizontalLayout.addLayout(self.videoLayout)
 
-        self.statusLayout = QVBoxLayout()
-        self.statusLayout.setSpacing(10)
-        self.statusLayout.setObjectName(u"statusLayout")
-        self.doorbell_layout = QVBoxLayout()
-        self.doorbell_layout.setObjectName(u"doorbell_layout")
-        self.status_doorbell_frame = QLabel(self.centralwidget)
-        self.status_doorbell_frame.setObjectName(u"status_doorbell_frame")
-        self.status_doorbell_frame.setMinimumSize(QSize(80, 80))
-        self.status_doorbell_frame.setStyleSheet(u"background-color: #e0e0e0; border: 2px solid #999999; border-radius: 50%;")
-        self.status_doorbell_frame.setAlignment(Qt.AlignCenter)
-
-        self.doorbell_layout.addWidget(self.status_doorbell_frame)
-
-        self.status_doorbell_label = QLabel(self.centralwidget)
-        self.status_doorbell_label.setObjectName(u"status_doorbell_label")
-        self.status_doorbell_label.setAlignment(Qt.AlignCenter)
-
-        self.doorbell_layout.addWidget(self.status_doorbell_label)
-
-
-        self.statusLayout.addLayout(self.doorbell_layout)
-
-        self.buzzer_layout = QVBoxLayout()
-        self.buzzer_layout.setObjectName(u"buzzer_layout")
-        self.status_buzzer_frame = QLabel(self.centralwidget)
-        self.status_buzzer_frame.setObjectName(u"status_buzzer_frame")
-        self.status_buzzer_frame.setMinimumSize(QSize(80, 80))
-        self.status_buzzer_frame.setStyleSheet(u"background-color: #e0e0e0; border: 2px solid #999999; border-radius: 50%;")
-        self.status_buzzer_frame.setAlignment(Qt.AlignCenter)
-
-        self.buzzer_layout.addWidget(self.status_buzzer_frame)
-
-        self.status_buzzer_label = QLabel(self.centralwidget)
-        self.status_buzzer_label.setObjectName(u"status_buzzer_label")
-        self.status_buzzer_label.setAlignment(Qt.AlignCenter)
-
-        self.buzzer_layout.addWidget(self.status_buzzer_label)
-
-
-        self.statusLayout.addLayout(self.buzzer_layout)
-
-        self.led1_layout = QVBoxLayout()
-        self.led1_layout.setObjectName(u"led1_layout")
-        self.status_led1_frame = QLabel(self.centralwidget)
-        self.status_led1_frame.setObjectName(u"status_led1_frame")
-        self.status_led1_frame.setMinimumSize(QSize(80, 80))
-        self.status_led1_frame.setStyleSheet(u"background-color: #e0e0e0; border: 2px solid #999999; border-radius: 50%;")
-        self.status_led1_frame.setAlignment(Qt.AlignCenter)
-
-        self.led1_layout.addWidget(self.status_led1_frame)
-
-        self.status_led1_label = QLabel(self.centralwidget)
-        self.status_led1_label.setObjectName(u"status_led1_label")
-        self.status_led1_label.setAlignment(Qt.AlignCenter)
-
-        self.led1_layout.addWidget(self.status_led1_label)
-
-
-        self.statusLayout.addLayout(self.led1_layout)
-
-        self.led2_layout = QVBoxLayout()
-        self.led2_layout.setObjectName(u"led2_layout")
-        self.status_led2_frame = QLabel(self.centralwidget)
+        self.gridLayout = QGridLayout()
+        self.gridLayout.setObjectName(u"gridLayout")
+        self.status_led2_frame = QLed(self.centralwidget)
         self.status_led2_frame.setObjectName(u"status_led2_frame")
         self.status_led2_frame.setMinimumSize(QSize(80, 80))
-        self.status_led2_frame.setStyleSheet(u"background-color: #e0e0e0; border: 2px solid #999999; border-radius: 50%;")
-        self.status_led2_frame.setAlignment(Qt.AlignCenter)
+        self.status_led2_frame.setOnColour(1)
+        self.status_led2_frame.setShape(1)
 
-        self.led2_layout.addWidget(self.status_led2_frame)
+        self.gridLayout.addWidget(self.status_led2_frame, 1, 0, 1, 1)
 
-        self.status_led2_label = QLabel(self.centralwidget)
-        self.status_led2_label.setObjectName(u"status_led2_label")
-        self.status_led2_label.setAlignment(Qt.AlignCenter)
-
-        self.led2_layout.addWidget(self.status_led2_label)
-
-
-        self.statusLayout.addLayout(self.led2_layout)
-
-        self.led3_layout = QVBoxLayout()
-        self.led3_layout.setObjectName(u"led3_layout")
-        self.status_led3_frame = QLabel(self.centralwidget)
+        self.status_led3_frame = QLed(self.centralwidget)
         self.status_led3_frame.setObjectName(u"status_led3_frame")
         self.status_led3_frame.setMinimumSize(QSize(80, 80))
-        self.status_led3_frame.setStyleSheet(u"background-color: #e0e0e0; border: 2px solid #999999; border-radius: 50%;")
-        self.status_led3_frame.setAlignment(Qt.AlignCenter)
 
-        self.led3_layout.addWidget(self.status_led3_frame)
+        self.gridLayout.addWidget(self.status_led3_frame, 1, 1, 1, 1)
 
-        self.status_led3_label = QLabel(self.centralwidget)
-        self.status_led3_label.setObjectName(u"status_led3_label")
-        self.status_led3_label.setAlignment(Qt.AlignCenter)
-
-        self.led3_layout.addWidget(self.status_led3_label)
-
-
-        self.statusLayout.addLayout(self.led3_layout)
-
-        self.led4_layout = QVBoxLayout()
-        self.led4_layout.setObjectName(u"led4_layout")
-        self.status_led4_frame = QLabel(self.centralwidget)
+        self.status_led4_frame = QLed(self.centralwidget)
         self.status_led4_frame.setObjectName(u"status_led4_frame")
         self.status_led4_frame.setMinimumSize(QSize(80, 80))
-        self.status_led4_frame.setStyleSheet(u"background-color: #e0e0e0; border: 2px solid #999999; border-radius: 50%;")
-        self.status_led4_frame.setAlignment(Qt.AlignCenter)
 
-        self.led4_layout.addWidget(self.status_led4_frame)
+        self.gridLayout.addWidget(self.status_led4_frame, 1, 2, 1, 1)
 
-        self.status_led4_label = QLabel(self.centralwidget)
-        self.status_led4_label.setObjectName(u"status_led4_label")
-        self.status_led4_label.setAlignment(Qt.AlignCenter)
+        self.status_led7_frame = QLed(self.centralwidget)
+        self.status_led7_frame.setObjectName(u"status_led7_frame")
+        self.status_led7_frame.setMinimumSize(QSize(80, 80))
 
-        self.led4_layout.addWidget(self.status_led4_label)
+        self.gridLayout.addWidget(self.status_led7_frame, 2, 2, 1, 1)
 
+        self.status_led9_frame = QLed(self.centralwidget)
+        self.status_led9_frame.setObjectName(u"status_led9_frame")
+        self.status_led9_frame.setMinimumSize(QSize(80, 80))
 
-        self.statusLayout.addLayout(self.led4_layout)
+        self.gridLayout.addWidget(self.status_led9_frame, 3, 1, 1, 1)
 
-        self.buttonLayout = QVBoxLayout()
-        self.buttonLayout.setObjectName(u"buttonLayout")
+        self.status_led10_frame = QLed(self.centralwidget)
+        self.status_led10_frame.setObjectName(u"status_led10_frame")
+        self.status_led10_frame.setMinimumSize(QSize(80, 80))
+
+        self.gridLayout.addWidget(self.status_led10_frame, 3, 2, 1, 1)
+
         self.start_button = QPushButton(self.centralwidget)
         self.start_button.setObjectName(u"start_button")
 
-        self.buttonLayout.addWidget(self.start_button)
+        self.gridLayout.addWidget(self.start_button, 4, 0, 1, 1)
 
         self.stop_button = QPushButton(self.centralwidget)
         self.stop_button.setObjectName(u"stop_button")
 
-        self.buttonLayout.addWidget(self.stop_button)
+        self.gridLayout.addWidget(self.stop_button, 4, 1, 1, 1)
+
+        self.lineEdit = QLineEdit(self.centralwidget)
+        self.lineEdit.setObjectName(u"lineEdit")
+        self.lineEdit.setEnabled(False)
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.lineEdit.sizePolicy().hasHeightForWidth())
+        self.lineEdit.setSizePolicy(sizePolicy)
+        self.lineEdit.setAlignment(Qt.AlignCenter)
+
+        self.gridLayout.addWidget(self.lineEdit, 0, 1, 1, 1)
+
+        self.lineEdit_2 = QLineEdit(self.centralwidget)
+        self.lineEdit_2.setObjectName(u"lineEdit_2")
+        self.lineEdit_2.setEnabled(False)
+        sizePolicy.setHeightForWidth(self.lineEdit_2.sizePolicy().hasHeightForWidth())
+        self.lineEdit_2.setSizePolicy(sizePolicy)
+        self.lineEdit_2.setAlignment(Qt.AlignCenter)
+
+        self.gridLayout.addWidget(self.lineEdit_2, 0, 0, 1, 1)
+
+        self.lineEdit_3 = QLineEdit(self.centralwidget)
+        self.lineEdit_3.setObjectName(u"lineEdit_3")
+        self.lineEdit_3.setEnabled(False)
+        sizePolicy.setHeightForWidth(self.lineEdit_3.sizePolicy().hasHeightForWidth())
+        self.lineEdit_3.setSizePolicy(sizePolicy)
+        self.lineEdit_3.setAlignment(Qt.AlignCenter)
+
+        self.gridLayout.addWidget(self.lineEdit_3, 0, 2, 1, 1)
+
+        self.lineEdit_4 = QLineEdit(self.centralwidget)
+        self.lineEdit_4.setObjectName(u"lineEdit_4")
+        self.lineEdit_4.setEnabled(False)
+        sizePolicy.setHeightForWidth(self.lineEdit_4.sizePolicy().hasHeightForWidth())
+        self.lineEdit_4.setSizePolicy(sizePolicy)
+        self.lineEdit_4.setAlignment(Qt.AlignCenter)
+
+        self.gridLayout.addWidget(self.lineEdit_4, 2, 1, 1, 1)
 
 
-        self.statusLayout.addLayout(self.buttonLayout)
-
-        self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
-
-        self.statusLayout.addItem(self.verticalSpacer)
-
-
-        self.horizontalLayout.addLayout(self.statusLayout)
+        self.horizontalLayout.addLayout(self.gridLayout)
 
         FaceRecognitionWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(FaceRecognitionWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 974, 37))
+        self.menubar.setGeometry(QRect(0, 0, 640, 24))
         FaceRecognitionWindow.setMenuBar(self.menubar)
         self.statusbar = QStatusBar(FaceRecognitionWindow)
         self.statusbar.setObjectName(u"statusbar")
@@ -197,19 +151,17 @@ class Ui_FaceRecognitionWindow(object):
     def retranslateUi(self, FaceRecognitionWindow):
         FaceRecognitionWindow.setWindowTitle(QCoreApplication.translate("FaceRecognitionWindow", u"Face Recognition", None))
         self.video_label.setText("")
-        self.status_doorbell_frame.setText("")
-        self.status_doorbell_label.setText(QCoreApplication.translate("FaceRecognitionWindow", u"\ucd08\uc778\uc885", None))
-        self.status_buzzer_frame.setText("")
-        self.status_buzzer_label.setText(QCoreApplication.translate("FaceRecognitionWindow", u"\ubd80\uc800", None))
-        self.status_led1_frame.setText("")
-        self.status_led1_label.setText(QCoreApplication.translate("FaceRecognitionWindow", u"LED1", None))
-        self.status_led2_frame.setText("")
-        self.status_led2_label.setText(QCoreApplication.translate("FaceRecognitionWindow", u"LED2", None))
-        self.status_led3_frame.setText("")
-        self.status_led3_label.setText(QCoreApplication.translate("FaceRecognitionWindow", u"LED3", None))
-        self.status_led4_frame.setText("")
-        self.status_led4_label.setText(QCoreApplication.translate("FaceRecognitionWindow", u"LED4", None))
-        self.start_button.setText(QCoreApplication.translate("FaceRecognitionWindow", u"Start Recognition", None))
-        self.stop_button.setText(QCoreApplication.translate("FaceRecognitionWindow", u"Stop Recognition", None))
+        self.status_led2_frame.setStyleSheet(QCoreApplication.translate("FaceRecognitionWindow", u"background-color: #e0e0e0; border: 2px solid #999999; border-radius: 50%;", None))
+        self.status_led3_frame.setStyleSheet(QCoreApplication.translate("FaceRecognitionWindow", u"background-color: #e0e0e0; border: 2px solid #999999; border-radius: 50%;", None))
+        self.status_led4_frame.setStyleSheet(QCoreApplication.translate("FaceRecognitionWindow", u"background-color: #e0e0e0; border: 2px solid #999999; border-radius: 50%;", None))
+        self.status_led7_frame.setStyleSheet(QCoreApplication.translate("FaceRecognitionWindow", u"background-color: #e0e0e0; border: 2px solid #999999; border-radius: 50%;", None))
+        self.status_led9_frame.setStyleSheet(QCoreApplication.translate("FaceRecognitionWindow", u"background-color: #e0e0e0; border: 2px solid #999999; border-radius: 50%;", None))
+        self.status_led10_frame.setStyleSheet(QCoreApplication.translate("FaceRecognitionWindow", u"background-color: #e0e0e0; border: 2px solid #999999; border-radius: 50%;", None))
+        self.start_button.setText(QCoreApplication.translate("FaceRecognitionWindow", u"Start", None))
+        self.stop_button.setText(QCoreApplication.translate("FaceRecognitionWindow", u"Stop", None))
+        self.lineEdit.setText(QCoreApplication.translate("FaceRecognitionWindow", u"\ubb38 \uac1c\ubc29", None))
+        self.lineEdit_2.setText(QCoreApplication.translate("FaceRecognitionWindow", u"\ucd08\uc778\uc885", None))
+        self.lineEdit_3.setText(QCoreApplication.translate("FaceRecognitionWindow", u"LED", None))
+        self.lineEdit_4.setText(QCoreApplication.translate("FaceRecognitionWindow", u"\ubb38 \uc7a0\uae08", None))
     # retranslateUi
 

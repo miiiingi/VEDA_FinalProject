@@ -220,6 +220,7 @@ class FaceRecognitionApp(QMainWindow, Ui_FaceRecognitionWindow):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
+        # Frameless 속성 설정
         self.result_queue = queue.Queue()
         self.face_recognition_thread = QThread()
         self.face_recognition_worker = FaceRecognitionThread(self.result_queue)
