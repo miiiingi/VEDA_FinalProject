@@ -13,8 +13,8 @@
 
 #define MOTOR_PIN 27    // GPIO 27 사용
 #define PWM_RANGE 255   // PWM 범위 설정
-#define FIXED_SPEED 120 // 정방향 PWM 값
-#define REVERSE_SPEED -120 // 역방향 PWM 값
+#define FIXED_SPEED 150 // 정방향 PWM 값
+#define REVERSE_SPEED -150 // 역방향 PWM 값
 #define CAN_INTERFACE "can0" // CAN 인터페이스 이름
 #define MOTOR_DELAY 5 // 모터 방향 전환 전 대기 시간(초)
 
@@ -127,7 +127,7 @@ public:
                 printf("데이터[%d]: %d\n", i, frame.data[i]);
             }
 
-            // ID 0x123 메시지 처리
+            // ID 0x001 메시지 처리
             if (frame.can_id == 0x001) {
                 // 얼굴 인식 성공, 비밀번호 입력 성공 시
                 if (frame.data[0] == 0b00000011) {
@@ -144,7 +144,8 @@ public:
                     sleep(MOTOR_DELAY);
                     
                     // 자동 잠금 메시지 전송
-                    frame.can_id = 0x002;
+                    frame.can_id = 0x001;
+                    // 3-byte data (만약을 위해 남겨 놓음)
                     frame.can_dlc = 3;
                     frame.data[0] = 0b00000100;
                     write(canSocket, &frame, sizeof(frame));
