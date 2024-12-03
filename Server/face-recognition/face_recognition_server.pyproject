@@ -1,0 +1,7 @@
+{
+    "files": [
+        "face_recognition_ui.py",
+        "server.py",
+        "face_recognition.ui"
+    ]
+}
