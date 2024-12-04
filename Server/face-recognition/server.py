@@ -201,6 +201,7 @@ class FaceRecognitionThread(QObject):
                     font = cv2.FONT_HERSHEY_DUPLEX
                     cv2.putText(frame, name, (left + 6, bottom - 6), font, 0.6, (255, 255, 255), 1)
 
+                frame = cv2.resize(frame, (320, 240))
                 self.image_update_signal.emit(frame)
                 
                 if cv2.waitKey(1) & 0xFF == ord('q'):
