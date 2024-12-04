@@ -6,12 +6,32 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>640</width>
-    <height>480</height>
+    <width>600</width>
+    <height>380</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Face Recognition</string>
+  </property>
+  <property name="styleSheet">
+   <string>
+				QMainWindow {
+				background-color: #4D4D4F;
+				}
+				QLabel {
+				color: #ffffff;
+				font-size: 18px;
+				}
+				QPushButton {
+				background-color: #4D4D4F;
+				color: #ffffff;
+				border: 2px solid #282c34;
+				border-radius: 5px;
+				}
+				QPushButton:hover {
+				background-color: #98c379;
+				}
+			</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout">
@@ -19,6 +39,12 @@
      <layout class="QVBoxLayout" name="videoLayout">
       <item>
        <widget class="QLabel" name="video_label">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="minimumSize">
          <size>
           <width>320</width>
@@ -30,6 +56,13 @@
         </property>
         <property name="alignment">
          <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPlainTextEdit" name="plainTextEdit">
+        <property name="enabled">
+         <bool>false</bool>
         </property>
        </widget>
       </item>
@@ -220,8 +253,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>640</width>
-     <height>24</height>
+     <width>600</width>
+     <height>28</height>
     </rect>
    </property>
   </widget>
