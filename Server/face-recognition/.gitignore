@@ -2,3 +2,4 @@
 .qtcreator
 *.user
 *.autosave
+__pycache__
