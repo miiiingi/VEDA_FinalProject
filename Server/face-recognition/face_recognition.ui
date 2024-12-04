@@ -1,239 +1,355 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>FaceRecognitionWindow</class>
- <widget class="QMainWindow" name="FaceRecognitionWindow">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>640</width>
-    <height>480</height>
-   </rect>
-  </property>
-  <property name="windowTitle">
-   <string>Face Recognition</string>
-  </property>
-  <widget class="QWidget" name="centralwidget">
-   <layout class="QHBoxLayout" name="horizontalLayout">
-    <item>
-     <layout class="QVBoxLayout" name="videoLayout">
-      <item>
-       <widget class="QLabel" name="video_label">
-        <property name="minimumSize">
-         <size>
-          <width>320</width>
-          <height>240</height>
-         </size>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignCenter</set>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </item>
-    <item>
-     <layout class="QGridLayout" name="gridLayout">
-      <item row="1" column="0">
-       <widget class="QLed" name="status_led2_frame" native="true">
-        <property name="minimumSize">
-         <size>
-          <width>80</width>
-          <height>80</height>
-         </size>
-        </property>
-        <property name="styleSheet">
-         <string>background-color: #e0e0e0; border: 2px solid #999999; border-radius: 50%;</string>
-        </property>
-        <property name="onColour" stdset="0">
-         <number>1</number>
-        </property>
-        <property name="shape" stdset="0">
-         <number>1</number>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="QLed" name="status_led3_frame" native="true">
-        <property name="minimumSize">
-         <size>
-          <width>80</width>
-          <height>80</height>
-         </size>
-        </property>
-        <property name="styleSheet">
-         <string>background-color: #e0e0e0; border: 2px solid #999999; border-radius: 50%;</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="2">
-       <widget class="QLed" name="status_led4_frame" native="true">
-        <property name="minimumSize">
-         <size>
-          <width>80</width>
-          <height>80</height>
-         </size>
-        </property>
-        <property name="styleSheet">
-         <string>background-color: #e0e0e0; border: 2px solid #999999; border-radius: 50%;</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="2">
-       <widget class="QLed" name="status_led7_frame" native="true">
-        <property name="minimumSize">
-         <size>
-          <width>80</width>
-          <height>80</height>
-         </size>
-        </property>
-        <property name="styleSheet">
-         <string>background-color: #e0e0e0; border: 2px solid #999999; border-radius: 50%;</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="1">
-       <widget class="QLed" name="status_led9_frame" native="true">
-        <property name="minimumSize">
-         <size>
-          <width>80</width>
-          <height>80</height>
-         </size>
-        </property>
-        <property name="styleSheet">
-         <string>background-color: #e0e0e0; border: 2px solid #999999; border-radius: 50%;</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="2">
-       <widget class="QLed" name="status_led10_frame" native="true">
-        <property name="minimumSize">
-         <size>
-          <width>80</width>
-          <height>80</height>
-         </size>
-        </property>
-        <property name="styleSheet">
-         <string>background-color: #e0e0e0; border: 2px solid #999999; border-radius: 50%;</string>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="0">
-       <widget class="QPushButton" name="start_button">
-        <property name="text">
-         <string>Start</string>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="1">
-       <widget class="QPushButton" name="stop_button">
-        <property name="text">
-         <string>Stop</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="1">
-       <widget class="QLineEdit" name="lineEdit">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="text">
-         <string>문 개방</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignCenter</set>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="0">
-       <widget class="QLineEdit" name="lineEdit_2">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="text">
-         <string>초인종</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignCenter</set>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="2">
-       <widget class="QLineEdit" name="lineEdit_3">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="text">
-         <string>LED</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignCenter</set>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1">
-       <widget class="QLineEdit" name="lineEdit_4">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="text">
-         <string>문 잠금</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignCenter</set>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </item>
-   </layout>
-  </widget>
-  <widget class="QMenuBar" name="menubar">
-   <property name="geometry">
-    <rect>
-     <x>0</x>
-     <y>0</y>
-     <width>640</width>
-     <height>24</height>
-    </rect>
-   </property>
-  </widget>
-  <widget class="QStatusBar" name="statusbar"/>
- </widget>
- <customwidgets>
-  <customwidget>
-   <class>QLed</class>
-   <extends>QWidget</extends>
-   <header location="global">QLed</header>
-  </customwidget>
- </customwidgets>
- <resources/>
- <connections/>
+	<class>
+		FaceRecognitionWindow
+	</class>
+	<widget class="QMainWindow" name="FaceRecognitionWindow">
+		<property name="geometry">
+			<rect>
+				<x>
+					0
+				</x>
+				<y>
+					0
+				</y>
+				<width>
+					640
+				</width>
+				<height>
+					480
+				</height>
+			</rect>
+		</property>
+		<property name="windowTitle">
+			<string>
+				Face Recognition
+			</string>
+		</property>
+		<widget class="QWidget" name="centralwidget">
+			<layout class="QHBoxLayout" name="horizontalLayout">
+				<item>
+					<layout class="QVBoxLayout" name="videoLayout">
+						<item>
+							<widget class="QLabel" name="video_label">
+								<property name="minimumSize">
+									<size>
+										<width>
+											320
+										</width>
+										<height>
+											240
+										</height>
+									</size>
+								</property>
+								<property name="text">
+									<string />
+								</property>
+								<property name="alignment">
+									<set>
+										Qt::AlignCenter
+									</set>
+								</property>
+							</widget>
+						</item>
+					</layout>
+				</item>
+				<item>
+					<layout class="QGridLayout" name="gridLayout">
+						<item row="1" column="0">
+							<widget class="QLed" name="status_led2_frame" native="true">
+								<property name="minimumSize">
+									<size>
+										<width>
+											80
+										</width>
+										<height>
+											80
+										</height>
+									</size>
+								</property>
+								<property name="styleSheet">
+									<string>
+										background-color: #e0e0e0; border: 2px solid #999999; border-radius: 50%;
+									</string>
+								</property>
+								<property name="onColour" stdset="0">
+									<number>
+										1
+									</number>
+								</property>
+								<property name="shape" stdset="0">
+									<number>
+										1
+									</number>
+								</property>
+							</widget>
+						</item>
+						<item row="1" column="1">
+							<widget class="QLed" name="status_led3_frame" native="true">
+								<property name="minimumSize">
+									<size>
+										<width>
+											80
+										</width>
+										<height>
+											80
+										</height>
+									</size>
+								</property>
+								<property name="styleSheet">
+									<string>
+										background-color: #e0e0e0; border: 2px solid #999999; border-radius: 50%;
+									</string>
+								</property>
+							</widget>
+						</item>
+						<item row="1" column="2">
+							<widget class="QLed" name="status_led4_frame" native="true">
+								<property name="minimumSize">
+									<size>
+										<width>
+											80
+										</width>
+										<height>
+											80
+										</height>
+									</size>
+								</property>
+								<property name="styleSheet">
+									<string>
+										background-color: #e0e0e0; border: 2px solid #999999; border-radius: 50%;
+									</string>
+								</property>
+							</widget>
+						</item>
+						<item row="2" column="2">
+							<widget class="QLed" name="status_led7_frame" native="true">
+								<property name="minimumSize">
+									<size>
+										<width>
+											80
+										</width>
+										<height>
+											80
+										</height>
+									</size>
+								</property>
+								<property name="styleSheet">
+									<string>
+										background-color: #e0e0e0; border: 2px solid #999999; border-radius: 50%;
+									</string>
+								</property>
+							</widget>
+						</item>
+						<item row="3" column="1">
+							<widget class="QLed" name="status_led9_frame" native="true">
+								<property name="minimumSize">
+									<size>
+										<width>
+											80
+										</width>
+										<height>
+											80
+										</height>
+									</size>
+								</property>
+								<property name="styleSheet">
+									<string>
+										background-color: #e0e0e0; border: 2px solid #999999; border-radius: 50%;
+									</string>
+								</property>
+							</widget>
+						</item>
+						<item row="3" column="2">
+							<widget class="QLed" name="status_led10_frame" native="true">
+								<property name="minimumSize">
+									<size>
+										<width>
+											80
+										</width>
+										<height>
+											80
+										</height>
+									</size>
+								</property>
+								<property name="styleSheet">
+									<string>
+										background-color: #e0e0e0; border: 2px solid #999999; border-radius: 50%;
+									</string>
+								</property>
+							</widget>
+						</item>
+						<item row="4" column="0">
+							<widget class="QPushButton" name="start_button">
+								<property name="text">
+									<string>
+										Start
+									</string>
+								</property>
+							</widget>
+						</item>
+						<item row="4" column="1">
+							<widget class="QPushButton" name="stop_button">
+								<property name="text">
+									<string>
+										Stop
+									</string>
+								</property>
+							</widget>
+						</item>
+						<item row="0" column="1">
+							<widget class="QLineEdit" name="lineEdit">
+								<property name="enabled">
+									<bool>
+										false
+									</bool>
+								</property>
+								<property name="sizePolicy">
+									<sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+										<horstretch>
+											0
+										</horstretch>
+										<verstretch>
+											0
+										</verstretch>
+									</sizepolicy>
+								</property>
+								<property name="text">
+									<string>
+										문 개방
+									</string>
+								</property>
+								<property name="alignment">
+									<set>
+										Qt::AlignCenter
+									</set>
+								</property>
+							</widget>
+						</item>
+						<item row="0" column="0">
+							<widget class="QLineEdit" name="lineEdit_2">
+								<property name="enabled">
+									<bool>
+										false
+									</bool>
+								</property>
+								<property name="sizePolicy">
+									<sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+										<horstretch>
+											0
+										</horstretch>
+										<verstretch>
+											0
+										</verstretch>
+									</sizepolicy>
+								</property>
+								<property name="text">
+									<string>
+										초인종
+									</string>
+								</property>
+								<property name="alignment">
+									<set>
+										Qt::AlignCenter
+									</set>
+								</property>
+							</widget>
+						</item>
+						<item row="0" column="2">
+							<widget class="QLineEdit" name="lineEdit_3">
+								<property name="enabled">
+									<bool>
+										false
+									</bool>
+								</property>
+								<property name="sizePolicy">
+									<sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+										<horstretch>
+											0
+										</horstretch>
+										<verstretch>
+											0
+										</verstretch>
+									</sizepolicy>
+								</property>
+								<property name="text">
+									<string>
+										LED
+									</string>
+								</property>
+								<property name="alignment">
+									<set>
+										Qt::AlignCenter
+									</set>
+								</property>
+							</widget>
+						</item>
+						<item row="2" column="1">
+							<widget class="QLineEdit" name="lineEdit_4">
+								<property name="enabled">
+									<bool>
+										false
+									</bool>
+								</property>
+								<property name="sizePolicy">
+									<sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+										<horstretch>
+											0
+										</horstretch>
+										<verstretch>
+											0
+										</verstretch>
+									</sizepolicy>
+								</property>
+								<property name="text">
+									<string>
+										문 잠금
+									</string>
+								</property>
+								<property name="alignment">
+									<set>
+										Qt::AlignCenter
+									</set>
+								</property>
+							</widget>
+						</item>
+					</layout>
+				</item>
+			</layout>
+		</widget>
+		<widget class="QMenuBar" name="menubar">
+			<property name="geometry">
+				<rect>
+					<x>
+						0
+					</x>
+					<y>
+						0
+					</y>
+					<width>
+						640
+					</width>
+					<height>
+						24
+					</height>
+				</rect>
+			</property>
+		</widget>
+		<widget class="QStatusBar" name="statusbar" />
+	</widget>
+	<customwidgets>
+		<customwidget>
+			<class>
+				QLed
+			</class>
+			<extends>
+				QWidget
+			</extends>
+			<header location="global">
+				QLed
+			</header>
+		</customwidget>
+	</customwidgets>
+	<resources />
+	<connections />
 </ui>
