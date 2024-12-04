@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>600</width>
-    <height>380</height>
+    <height>386</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -71,7 +71,7 @@
     <item>
      <layout class="QGridLayout" name="gridLayout">
       <item row="1" column="0">
-       <widget class="QLed" name="status_led2_frame" native="true">
+       <widget class="QLabel" name="icon_bell">
         <property name="minimumSize">
          <size>
           <width>80</width>
@@ -79,13 +79,7 @@
          </size>
         </property>
         <property name="styleSheet">
-         <string>background-color: #e0e0e0; border: 2px solid #999999; border-radius: 50%;</string>
-        </property>
-        <property name="onColour" stdset="0">
-         <number>1</number>
-        </property>
-        <property name="shape" stdset="0">
-         <number>1</number>
+         <string>background-color: transparent;</string>
         </property>
        </widget>
       </item>
@@ -241,6 +235,13 @@
         </property>
         <property name="alignment">
          <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="2">
+       <widget class="QPushButton" name="test_button">
+        <property name="text">
+         <string>TestButton</string>
         </property>
        </widget>
       </item>
