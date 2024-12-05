@@ -301,7 +301,9 @@ class FaceRecognitionApp(QMainWindow, Ui_FaceRecognitionWindow):
         self.door_button.clicked.connect(self.start_door_animation)
 
     def setup_siren_icon(self):
-        self.active_siren_image_path = 'asset/icon_siren_active.gif'
+        self.active_siren_red_image_path = 'asset/icon_siren_active.gif'
+        self.active_siren_blue_image_path = 'asset/icon_siren_blue.gif'
+        self.active_siren_green_image_path = 'asset/icon_siren_green.gif'
         self.idle_siren_image_path = 'asset/icon_siren_idle.png'
 
         self.siren_button = self.findChild(QPushButton, 'siren_button')
@@ -317,17 +319,31 @@ class FaceRecognitionApp(QMainWindow, Ui_FaceRecognitionWindow):
             )
             self.icon_siren.setPixmap(scaled_pixmap)
         else:
-            print(f"jpg 파일을 찾을 수 없습니다: {self.active_siren_image_path}")
+            print(f"jpg 파일을 찾을 수 없습니다: {self.active_siren_red_image_path}")
         
         # 활성화 상태 GIF 준비
-        if os.path.exists(self.active_siren_image_path):
-            self.icon_siren_movie = QMovie(self.active_siren_image_path)
-            self.icon_siren_movie.setScaledSize(self.icon_siren.size())
+        if os.path.exists(self.active_siren_red_image_path):
+            self.icon_siren_red_movie = QMovie(self.active_siren_red_image_path)
+            self.icon_siren_red_movie.setScaledSize(self.icon_siren.size())
         else:
-            print(f"GIF 파일을 찾을 수 없습니다: {self.active_siren_image_path}")
-            self.icon_siren_movie = None
-        
-        self.siren_button.clicked.connect(self.start_siren_animation)
+            print(f"GIF 파일을 찾을 수 없습니다: {self.active_siren_red_image_path}")
+            self.icon_siren_red_movie = None
+
+        # 활성화 상태 GIF 준비
+        if os.path.exists(self.active_siren_blue_image_path):
+            self.icon_siren_blue_movie = QMovie(self.active_siren_blue_image_path)
+            self.icon_siren_blue_movie.setScaledSize(self.icon_siren.size())
+        else:
+            print(f"GIF 파일을 찾을 수 없습니다: {self.active_siren_blue_image_path}")
+            self.icon_siren_blue_movie = None
+
+        # 활성화 상태 GIF 준비
+        if os.path.exists(self.active_siren_green_image_path):
+            self.icon_siren_green_movie = QMovie(self.active_siren_green_image_path)
+            self.icon_siren_green_movie.setScaledSize(self.icon_siren.size())
+        else:
+            print(f"GIF 파일을 찾을 수 없습니다: {self.active_siren_green_image_path}")
+            self.icon_siren_green_movie = None
 
     def start_recognition(self):
         if not self.face_recognition_thread.isRunning():
@@ -361,57 +377,24 @@ class FaceRecognitionApp(QMainWindow, Ui_FaceRecognitionWindow):
             Qt.AspectRatioMode.KeepAspectRatio,
             Qt.TransformationMode.SmoothTransformation
         ))
-
-    # 클래스 메서드로 변경
-    def convert_signal(self, tcp_received_signal):
-        signal_map = {
-            1: 'status_doorbell',
-            2: 'status_buzzer',
-            3: 'status_led1',
-            4: 'status_led2',
-            5: 'status_led3',
-            6: 'status_led4'
-        }
-        return signal_map.get(tcp_received_signal, 'status_off')
     
     def change_led_status(self, tcp_received_signal):
-        print(f"tcp received signal: {int(chr(tcp_received_signal[0]))}")
-        converted_signal = self.convert_signal(int(chr(tcp_received_signal[0])))
-        print(f"converted signal: {converted_signal}")
-        is_on = converted_signal != 'status_off'
-        
-        frame = getattr(self, f'{converted_signal}_frame', None)
-        if frame:
-            if is_on:
-                # 해당 LED의 활성 색상으로 변경
-                color_map = {
-                    'status_doorbell': '#FF0000',
-                    'status_buzzer': '#00FF00',
-                    'status_led1': '#FFFF00',
-                    'status_led2': '#0000FF',
-                    'status_led3': '#FFFFFF',
-                    'status_led4': '#FFFFFF'
-                }
-                frame.setStyleSheet(f"""
-                    QLabel {{
-                        background-color: {color_map.get(converted_signal, '#e0e0e0')};
-                        border: 2px solid #999999;
-                        border-radius: 50%;
-                        min-width: 80px;
-                        min-height: 80px;
-                    }}
-                """)
-            else:
-                # LED 끄기 (회색으로 변경)
-                frame.setStyleSheet("""
-                    QLabel {
-                        background-color: #e0e0e0;
-                        border: 2px solid #999999;
-                        border-radius: 50%;
-                        min-width: 80px;
-                        min-height: 80px;
-                    }
-                """)
+        received = int(chr(tcp_received_signal[0]))
+        print(f"tcp received signal: {received}")
+        if received == 0:
+            self.start_bell_animation()
+            self.start_red_siren_animation()
+        elif received == 1:
+            self.start_bell_animation()
+            self.start_blue_siren_animation()
+        elif received == 2:
+            self.start_bell_animation()
+            self.start_red_siren_animation()
+        elif received == 3:
+            self.start_bell_animation()
+            self.start_door_animation()
+            self.start_green_siren_animation()
+
     def start_bell_animation(self):
         if self.icon_bell_movie:
             # 현재 프레임 수 확인
@@ -492,30 +475,90 @@ class FaceRecognitionApp(QMainWindow, Ui_FaceRecognitionWindow):
         )
         self.icon_door.setPixmap(scaled_pixmap)
 
-    def start_siren_animation(self):
-        if self.icon_siren_movie:
+    def start_red_siren_animation(self):
+        if self.icon_siren_red_movie:
             # 현재 프레임 수 확인
-            total_frames = self.icon_siren_movie.frameCount()
+            total_frames = self.icon_siren_red_movie.frameCount()
             
             # 첫 프레임으로 리셋
-            self.icon_siren_movie.jumpToFrame(0)
+            self.icon_siren_red_movie.jumpToFrame(0)
             
             # GIF 애니메이션 시작
-            self.icon_siren.setMovie(self.icon_siren_movie)
-            self.icon_siren_movie.start()
+            self.icon_siren.setMovie(self.icon_siren_red_movie)
+            self.icon_siren_red_movie.start()
             
             # 마지막 프레임에 도달하면 정지 및 idle 상태로 전환
-            self.icon_siren_movie.frameChanged.connect(
-                lambda frame: self.stop_siren_animation_at_last_frame(frame, total_frames)
+            self.icon_siren_red_movie.frameChanged.connect(
+                lambda frame: self.stop_red_siren_animation_at_last_frame(frame, total_frames)
             )
 
-    def stop_siren_animation_at_last_frame(self, current_frame, total_frames):
+    def stop_red_siren_animation_at_last_frame(self, current_frame, total_frames):
         if current_frame == total_frames - 1:
-            self.icon_siren_movie.stop()
+            self.icon_siren_red_movie.stop()
             
             # 이전 연결 해제 (메모리 누수 방지)
             try:
-                self.icon_siren_movie.frameChanged.disconnect()
+                self.icon_siren_red_movie.frameChanged.disconnect()
+            except TypeError:
+                pass
+            
+            # idle 상태로 되돌리기
+            self.reset_siren_to_idle()
+
+    def start_blue_siren_animation(self):
+        if self.icon_siren_blue_movie:
+            # 현재 프레임 수 확인
+            total_frames = self.icon_siren_blue_movie.frameCount()
+            
+            # 첫 프레임으로 리셋
+            self.icon_siren_blue_movie.jumpToFrame(0)
+            
+            # GIF 애니메이션 시작
+            self.icon_siren.setMovie(self.icon_siren_blue_movie)
+            self.icon_siren_blue_movie.start()
+            
+            # 마지막 프레임에 도달하면 정지 및 idle 상태로 전환
+            self.icon_siren_blue_movie.frameChanged.connect(
+                lambda frame: self.stop_blue_siren_animation_at_last_frame(frame, total_frames)
+            )
+
+    def stop_blue_siren_animation_at_last_frame(self, current_frame, total_frames):
+        if current_frame == total_frames - 1:
+            self.icon_siren_blue_movie.stop()
+            
+            # 이전 연결 해제 (메모리 누수 방지)
+            try:
+                self.icon_siren_blue_movie.frameChanged.disconnect()
+            except TypeError:
+                pass
+            
+            # idle 상태로 되돌리기
+            self.reset_siren_to_idle()
+
+    def start_green_siren_animation(self):
+        if self.icon_siren_green_movie:
+            # 현재 프레임 수 확인
+            total_frames = self.icon_siren_green_movie.frameCount()
+            
+            # 첫 프레임으로 리셋
+            self.icon_siren_green_movie.jumpToFrame(0)
+            
+            # GIF 애니메이션 시작
+            self.icon_siren.setMovie(self.icon_siren_green_movie)
+            self.icon_siren_green_movie.start()
+            
+            # 마지막 프레임에 도달하면 정지 및 idle 상태로 전환
+            self.icon_siren_green_movie.frameChanged.connect(
+                lambda frame: self.stop_green_siren_animation_at_last_frame(frame, total_frames)
+            )
+
+    def stop_green_siren_animation_at_last_frame(self, current_frame, total_frames):
+        if current_frame == total_frames - 1:
+            self.icon_siren_green_movie.stop()
+            
+            # 이전 연결 해제 (메모리 누수 방지)
+            try:
+                self.icon_siren_green_movie.frameChanged.disconnect()
             except TypeError:
                 pass
             
@@ -531,9 +574,6 @@ class FaceRecognitionApp(QMainWindow, Ui_FaceRecognitionWindow):
             Qt.SmoothTransformation
         )
         self.icon_siren.setPixmap(scaled_pixmap)
-
-
-
 
     def closeEvent(self, event):
         pass
