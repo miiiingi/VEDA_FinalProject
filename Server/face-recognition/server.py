@@ -221,8 +221,8 @@ class FaceRecognitionApp(QMainWindow, Ui_FaceRecognitionWindow):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
-        # self.setup_bell_icon()
-        # self.setup_door_icon()
+        self.setup_bell_icon()
+        self.setup_door_icon()
         self.setup_siren_icon()
         # Frameless 속성 설정
         self.result_queue = queue.Queue()
@@ -246,7 +246,7 @@ class FaceRecognitionApp(QMainWindow, Ui_FaceRecognitionWindow):
         self.active_bell_image_path = 'asset/icon_bell_active.gif'
         self.idle_bell_image_path = 'asset/icon_bell_idle.png'
 
-        self.test_button = self.findChild(QPushButton, 'test_button')
+        self.bell_button = self.findChild(QPushButton, 'bell_button')
 
         # 파일 존재 여부 확인
         if os.path.exists(self.idle_bell_image_path):
@@ -269,13 +269,13 @@ class FaceRecognitionApp(QMainWindow, Ui_FaceRecognitionWindow):
             print(f"GIF 파일을 찾을 수 없습니다: {self.active_bell_image_path}")
             self.icon_bell_movie = None
         
-        # self.test_button.clicked.connect(self.start_bell_animation)
+        self.bell_button.clicked.connect(self.start_bell_animation)
 
     def setup_door_icon(self):
         self.active_door_image_path = 'asset/icon_door_active.gif'
         self.idle_door_image_path = 'asset/icon_door_idle.png'
 
-        self.test_button = self.findChild(QPushButton, 'test_button')
+        self.door_button = self.findChild(QPushButton, 'door_button')
 
         # 파일 존재 여부 확인
         if os.path.exists(self.idle_door_image_path):
@@ -298,13 +298,13 @@ class FaceRecognitionApp(QMainWindow, Ui_FaceRecognitionWindow):
             print(f"GIF 파일을 찾을 수 없습니다: {self.active_door_image_path}")
             self.icon_door_movie = None
         
-        self.test_button.clicked.connect(self.start_door_animation)
+        self.door_button.clicked.connect(self.start_door_animation)
 
     def setup_siren_icon(self):
         self.active_siren_image_path = 'asset/icon_siren_active.gif'
         self.idle_siren_image_path = 'asset/icon_siren_idle.png'
 
-        self.test_button = self.findChild(QPushButton, 'test_button')
+        self.siren_button = self.findChild(QPushButton, 'siren_button')
 
         # 파일 존재 여부 확인
         if os.path.exists(self.idle_siren_image_path):
@@ -327,7 +327,7 @@ class FaceRecognitionApp(QMainWindow, Ui_FaceRecognitionWindow):
             print(f"GIF 파일을 찾을 수 없습니다: {self.active_siren_image_path}")
             self.icon_siren_movie = None
         
-        self.test_button.clicked.connect(self.start_siren_animation)
+        self.siren_button.clicked.connect(self.start_siren_animation)
 
     def start_recognition(self):
         if not self.face_recognition_thread.isRunning():

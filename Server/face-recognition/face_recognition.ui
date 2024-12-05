@@ -95,21 +95,9 @@
           <item>
            <layout class="QVBoxLayout" name="bellLayout">
             <item>
-             <widget class="QLineEdit" name="lineEdit_2">
-              <property name="enabled">
-               <bool>false</bool>
-              </property>
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
+             <widget class="QPushButton" name="bell_button">
               <property name="text">
-               <string>초인종</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignCenter</set>
+               <string>bell_button</string>
               </property>
              </widget>
             </item>
@@ -140,15 +128,9 @@
           <item>
            <layout class="QVBoxLayout" name="doorLayout">
             <item>
-             <widget class="QLineEdit" name="lineEdit">
-              <property name="enabled">
-               <bool>false</bool>
-              </property>
+             <widget class="QPushButton" name="door_button">
               <property name="text">
-               <string>문 개방</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignCenter</set>
+               <string>door_button</string>
               </property>
              </widget>
             </item>
@@ -173,15 +155,9 @@
           <item>
            <layout class="QVBoxLayout" name="sirenLayout">
             <item>
-             <widget class="QLineEdit" name="lineEdit_3">
-              <property name="enabled">
-               <bool>false</bool>
-              </property>
+             <widget class="QPushButton" name="siren_button">
               <property name="text">
-               <string>LED</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignCenter</set>
+               <string>siren_button</string>
               </property>
              </widget>
             </item>
@@ -224,13 +200,6 @@
            <widget class="QPushButton" name="stop_button">
             <property name="text">
              <string>Stop</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="test_button">
-            <property name="text">
-             <string>TestButton</string>
             </property>
            </widget>
           </item>
