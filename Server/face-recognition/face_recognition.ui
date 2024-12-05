@@ -88,7 +88,7 @@
       <item>
        <layout class="QFormLayout" name="formLayout">
         <property name="verticalSpacing">
-         <number>30</number>
+         <number>6</number>
         </property>
         <item row="0" column="0" colspan="2">
          <layout class="QHBoxLayout" name="iconsLayout">
@@ -97,7 +97,7 @@
             <item>
              <widget class="QPushButton" name="bell_button">
               <property name="text">
-               <string>bell_button</string>
+               <string>bell</string>
               </property>
              </widget>
             </item>
@@ -130,7 +130,7 @@
             <item>
              <widget class="QPushButton" name="door_button">
               <property name="text">
-               <string>door_button</string>
+               <string>door</string>
               </property>
              </widget>
             </item>
@@ -157,7 +157,7 @@
             <item>
              <widget class="QPushButton" name="siren_button">
               <property name="text">
-               <string>siren_button</string>
+               <string>siren</string>
               </property>
              </widget>
             </item>
