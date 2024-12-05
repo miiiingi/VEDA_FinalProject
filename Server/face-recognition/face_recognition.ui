@@ -69,8 +69,21 @@
      </layout>
     </item>
     <item>
-     <layout class="QGridLayout" name="gridLayout">
-      <item row="1" column="0">
+     <layout class="QFormLayout" name="formLayout">
+      <item row="0" column="0">
+       <widget class="QLineEdit" name="lineEdit_2">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>초인종</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
        <widget class="QLabel" name="icon_bell">
         <property name="minimumSize">
          <size>
@@ -80,6 +93,19 @@
         </property>
         <property name="styleSheet">
          <string>background-color: transparent;</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLineEdit" name="lineEdit">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>문 개방</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
         </property>
        </widget>
       </item>
@@ -96,120 +122,10 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="2">
-       <widget class="QLed" name="status_led4_frame" native="true">
-        <property name="minimumSize">
-         <size>
-          <width>80</width>
-          <height>80</height>
-         </size>
-        </property>
-        <property name="styleSheet">
-         <string>background-color: #e0e0e0; border: 2px solid #999999; border-radius: 50%;</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="2">
-       <widget class="QLed" name="status_led7_frame" native="true">
-        <property name="minimumSize">
-         <size>
-          <width>80</width>
-          <height>80</height>
-         </size>
-        </property>
-        <property name="styleSheet">
-         <string>background-color: #e0e0e0; border: 2px solid #999999; border-radius: 50%;</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="1">
-       <widget class="QLed" name="status_led9_frame" native="true">
-        <property name="minimumSize">
-         <size>
-          <width>80</width>
-          <height>80</height>
-         </size>
-        </property>
-        <property name="styleSheet">
-         <string>background-color: #e0e0e0; border: 2px solid #999999; border-radius: 50%;</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="2">
-       <widget class="QLed" name="status_led10_frame" native="true">
-        <property name="minimumSize">
-         <size>
-          <width>80</width>
-          <height>80</height>
-         </size>
-        </property>
-        <property name="styleSheet">
-         <string>background-color: #e0e0e0; border: 2px solid #999999; border-radius: 50%;</string>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="0">
-       <widget class="QPushButton" name="start_button">
-        <property name="text">
-         <string>Start</string>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="1">
-       <widget class="QPushButton" name="stop_button">
-        <property name="text">
-         <string>Stop</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="1">
-       <widget class="QLineEdit" name="lineEdit">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="text">
-         <string>문 개방</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignCenter</set>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="0">
-       <widget class="QLineEdit" name="lineEdit_2">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="text">
-         <string>초인종</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignCenter</set>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="2">
+      <item row="2" column="0">
        <widget class="QLineEdit" name="lineEdit_3">
         <property name="enabled">
          <bool>false</bool>
-        </property>
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
         </property>
         <property name="text">
          <string>LED</string>
@@ -220,30 +136,72 @@
        </widget>
       </item>
       <item row="2" column="1">
-       <widget class="QLineEdit" name="lineEdit_4">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="text">
-         <string>문 잠금</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignCenter</set>
-        </property>
-       </widget>
+       <layout class="QHBoxLayout" name="ledLayout">
+        <item>
+         <widget class="QLed" name="status_led4_frame" native="true">
+          <property name="minimumSize">
+           <size>
+            <width>80</width>
+            <height>80</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string>background-color: #e0e0e0; border: 2px solid #999999; border-radius: 50%;</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLed" name="status_led7_frame" native="true">
+          <property name="minimumSize">
+           <size>
+            <width>80</width>
+            <height>80</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string>background-color: #e0e0e0; border: 2px solid #999999; border-radius: 50%;</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLed" name="status_led9_frame" native="true">
+          <property name="minimumSize">
+           <size>
+            <width>80</width>
+            <height>80</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string>background-color: #e0e0e0; border: 2px solid #999999; border-radius: 50%;</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </item>
-      <item row="4" column="2">
-       <widget class="QPushButton" name="test_button">
-        <property name="text">
-         <string>TestButton</string>
-        </property>
-       </widget>
+      <item row="3" column="0" colspan="2">
+       <layout class="QHBoxLayout" name="buttonLayout">
+        <item>
+         <widget class="QPushButton" name="start_button">
+          <property name="text">
+           <string>Start</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="stop_button">
+          <property name="text">
+           <string>Stop</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="test_button">
+          <property name="text">
+           <string>TestButton</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </item>
      </layout>
     </item>
