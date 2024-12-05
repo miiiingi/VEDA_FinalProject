@@ -23,7 +23,7 @@ void Motor::setSpeed(int speed) {
     if (speed < -PWM_RANGE) speed = -PWM_RANGE;
     if (speed > PWM_RANGE) speed = PWM_RANGE;
 
-    softPwmWrite(motorPin, abs(speed));
+    softPwmWrite(motorPin, speed);
 
     if (speed < 0) {
         std::cout << "모터 역방향 회전 (PWM: " << abs(speed) << ")\n";

@@ -1,4 +1,6 @@
 #pragma once
+#ifndef CONSTANTS_H
+#define CONSTANTS_H
 
 // 상수 정의
 const int MOTOR_PIN = 27;
@@ -7,3 +9,5 @@ const int FIXED_SPEED = 150;
 const int REVERSE_SPEED = -150;
 const char* const CAN_INTERFACE = "can0";
 const int MOTOR_DELAY = 5;
+
+#endif

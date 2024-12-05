@@ -1,4 +1,7 @@
 #pragma once
+#ifndef DOORLOCKCONTROLLER_H
+#define DOORLOCKCONTROLLER_H
+
 #include "Motor.h"
 #include "CANController.h"
 #include <linux/can.h>
@@ -16,3 +19,5 @@ public:
     void processMessages();
     void run();
 };
+
+#endif
