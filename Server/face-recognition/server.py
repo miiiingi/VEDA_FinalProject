@@ -221,35 +221,8 @@ class FaceRecognitionApp(QMainWindow, Ui_FaceRecognitionWindow):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
-
-        self.gif_path = 'asset/icon_bell_active.gif'
-        self.idle_image_path = 'asset/icon_bell_idle.png'
-
-        self.test_button = self.findChild(QPushButton, 'test_button')
-
-        # 파일 존재 여부 확인
-        if os.path.exists(self.idle_image_path):
-            # LED 대신 GIF 설정
-            idle_pixmap = QPixmap(self.idle_image_path)
-            scaled_pixmap = idle_pixmap.scaled(
-                self.icon_bell.size(), 
-                Qt.KeepAspectRatio, 
-                Qt.SmoothTransformation
-            )
-            self.icon_bell.setPixmap(scaled_pixmap)
-        else:
-            print(f"jpg 파일을 찾을 수 없습니다: {self.gif_path}")
-        
-        # 활성화 상태 GIF 준비
-        if os.path.exists(self.gif_path):
-            self.icon_bell_movie = QMovie(self.gif_path)
-            self.icon_bell_movie.setScaledSize(self.icon_bell.size())
-        else:
-            print(f"GIF 파일을 찾을 수 없습니다: {self.gif_path}")
-            self.icon_bell_movie = None
-        
-        self.test_button.clicked.connect(self.start_bell_animation)
-
+        # self.setup_bell_icon()
+        self.setup_door_icon()
         # Frameless 속성 설정
         self.result_queue = queue.Queue()
         self.face_recognition_thread = QThread()
@@ -268,45 +241,65 @@ class FaceRecognitionApp(QMainWindow, Ui_FaceRecognitionWindow):
         self.start_button.clicked.connect(self.start_recognition)
         self.stop_button.clicked.connect(self.stop_recognition)
 
-    def start_bell_animation(self):
-        if self.icon_bell_movie:
-            # 현재 프레임 수 확인
-            total_frames = self.icon_bell_movie.frameCount()
-            
-            # 첫 프레임으로 리셋
-            self.icon_bell_movie.jumpToFrame(0)
-            
-            # GIF 애니메이션 시작
-            self.icon_bell.setMovie(self.icon_bell_movie)
-            self.icon_bell_movie.start()
-            
-            # 마지막 프레임에 도달하면 정지 및 idle 상태로 전환
-            self.icon_bell_movie.frameChanged.connect(
-                lambda frame: self.stop_animation_at_last_frame(frame, total_frames)
+    def setup_bell_icon(self):
+        self.active_bell_image_path = 'asset/icon_bell_active.gif'
+        self.idle_bell_image_path = 'asset/icon_bell_idle.png'
+
+        self.test_button = self.findChild(QPushButton, 'test_button')
+
+        # 파일 존재 여부 확인
+        if os.path.exists(self.idle_bell_image_path):
+            # LED 대신 GIF 설정
+            idle_pixmap = QPixmap(self.idle_bell_image_path)
+            scaled_pixmap = idle_pixmap.scaled(
+                self.icon_bell.size(), 
+                Qt.KeepAspectRatio, 
+                Qt.SmoothTransformation
             )
+            self.icon_bell.setPixmap(scaled_pixmap)
+        else:
+            print(f"jpg 파일을 찾을 수 없습니다: {self.active_bell_image_path}")
+        
+        # 활성화 상태 GIF 준비
+        if os.path.exists(self.active_bell_image_path):
+            self.icon_bell_movie = QMovie(self.active_bell_image_path)
+            self.icon_bell_movie.setScaledSize(self.icon_bell.size())
+        else:
+            print(f"GIF 파일을 찾을 수 없습니다: {self.active_bell_image_path}")
+            self.icon_bell_movie = None
+        
+        # self.test_button.clicked.connect(self.start_bell_animation)
 
-    def stop_animation_at_last_frame(self, current_frame, total_frames):
-        if current_frame == total_frames - 1:
-            self.icon_bell_movie.stop()
-            
-            # 이전 연결 해제 (메모리 누수 방지)
-            try:
-                self.icon_bell_movie.frameChanged.disconnect()
-            except TypeError:
-                pass
-            
-            # idle 상태로 되돌리기
-            self.reset_to_idle()
+    def setup_door_icon(self):
+        self.active_door_image_path = 'asset/icon_door_active.gif'
+        self.idle_door_image_path = 'asset/icon_door_idle.png'
 
-    def reset_to_idle(self):
-        # idle 이미지로 되돌리기
-        idle_pixmap = QPixmap(self.idle_image_path)
-        scaled_pixmap = idle_pixmap.scaled(
-            self.icon_bell.size(), 
-            Qt.KeepAspectRatio, 
-            Qt.SmoothTransformation
-        )
-        self.icon_bell.setPixmap(scaled_pixmap)
+        self.test_button = self.findChild(QPushButton, 'test_button')
+
+        # 파일 존재 여부 확인
+        if os.path.exists(self.idle_door_image_path):
+            # LED 대신 GIF 설정
+            idle_pixmap = QPixmap(self.idle_door_image_path)
+            scaled_pixmap = idle_pixmap.scaled(
+                self.icon_door.size(), 
+                Qt.KeepAspectRatio, 
+                Qt.SmoothTransformation
+            )
+            self.icon_door.setPixmap(scaled_pixmap)
+        else:
+            print(f"jpg 파일을 찾을 수 없습니다: {self.active_door_image_path}")
+        
+        # 활성화 상태 GIF 준비
+        if os.path.exists(self.active_door_image_path):
+            self.icon_door_movie = QMovie(self.active_door_image_path)
+            self.icon_door_movie.setScaledSize(self.icon_door.size())
+        else:
+            print(f"GIF 파일을 찾을 수 없습니다: {self.active_door_image_path}")
+            self.icon_door_movie = None
+        
+        self.test_button.clicked.connect(self.start_door_animation)
+
+
 
     def start_recognition(self):
         if not self.face_recognition_thread.isRunning():
@@ -391,6 +384,87 @@ class FaceRecognitionApp(QMainWindow, Ui_FaceRecognitionWindow):
                         min-height: 80px;
                     }
                 """)
+    def start_bell_animation(self):
+        if self.icon_bell_movie:
+            # 현재 프레임 수 확인
+            total_frames = self.icon_bell_movie.frameCount()
+            
+            # 첫 프레임으로 리셋
+            self.icon_bell_movie.jumpToFrame(0)
+            
+            # GIF 애니메이션 시작
+            self.icon_bell.setMovie(self.icon_bell_movie)
+            self.icon_bell_movie.start()
+            
+            # 마지막 프레임에 도달하면 정지 및 idle 상태로 전환
+            self.icon_bell_movie.frameChanged.connect(
+                lambda frame: self.stop_bell_animation_at_last_frame(frame, total_frames)
+            )
+
+    def stop_bell_animation_at_last_frame(self, current_frame, total_frames):
+        if current_frame == total_frames - 1:
+            self.icon_bell_movie.stop()
+            
+            # 이전 연결 해제 (메모리 누수 방지)
+            try:
+                self.icon_bell_movie.frameChanged.disconnect()
+            except TypeError:
+                pass
+            
+            # idle 상태로 되돌리기
+            self.reset_bell_to_idle()
+
+    def reset_bell_to_idle(self):
+        # idle 이미지로 되돌리기
+        idle_pixmap = QPixmap(self.idle_bell_image_path)
+        scaled_pixmap = idle_pixmap.scaled(
+            self.icon_bell.size(), 
+            Qt.KeepAspectRatio, 
+            Qt.SmoothTransformation
+        )
+        self.icon_bell.setPixmap(scaled_pixmap)
+
+    def start_door_animation(self):
+        if self.icon_door_movie:
+            # 현재 프레임 수 확인
+            total_frames = self.icon_door_movie.frameCount()
+            
+            # 첫 프레임으로 리셋
+            self.icon_door_movie.jumpToFrame(0)
+            
+            # GIF 애니메이션 시작
+            self.icon_door.setMovie(self.icon_door_movie)
+            self.icon_door_movie.start()
+            
+            # 마지막 프레임에 도달하면 정지 및 idle 상태로 전환
+            self.icon_door_movie.frameChanged.connect(
+                lambda frame: self.stop_door_animation_at_last_frame(frame, total_frames)
+            )
+
+    def stop_door_animation_at_last_frame(self, current_frame, total_frames):
+        if current_frame == total_frames - 1:
+            self.icon_door_movie.stop()
+            
+            # 이전 연결 해제 (메모리 누수 방지)
+            try:
+                self.icon_door_movie.frameChanged.disconnect()
+            except TypeError:
+                pass
+            
+            # idle 상태로 되돌리기
+            self.reset_door_to_idle()
+
+    def reset_door_to_idle(self):
+        # idle 이미지로 되돌리기
+        idle_pixmap = QPixmap(self.idle_door_image_path)
+        scaled_pixmap = idle_pixmap.scaled(
+            self.icon_door.size(), 
+            Qt.KeepAspectRatio, 
+            Qt.SmoothTransformation
+        )
+        self.icon_door.setPixmap(scaled_pixmap)
+
+
 
     def closeEvent(self, event):
         pass
