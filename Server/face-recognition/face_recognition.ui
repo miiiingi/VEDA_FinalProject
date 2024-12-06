@@ -210,11 +210,23 @@
      </layout>
     </item>
     <item>
-     <widget class="QPlainTextEdit" name="plainTextEdit">
-      <property name="enabled">
-       <bool>false</bool>
-      </property>
-     </widget>
+    <widget class="QPlainTextEdit" name="plainTextEdit">
+        <property name="enabled">
+        <bool>true</bool>
+        </property>
+        <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+        </sizepolicy>
+        </property>
+        <property name="verticalScrollBarPolicy">
+        <enum>Qt::ScrollBarAsNeeded</enum>
+        </property>
+        <property name="horizontalScrollBarPolicy">
+        <enum>Qt::ScrollBarAsNeeded</enum>
+        </property>
+    </widget>
     </item>
    </layout>
   </widget>
