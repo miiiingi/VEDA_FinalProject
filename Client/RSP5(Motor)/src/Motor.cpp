@@ -1,39 +1,41 @@
 #include "../include/Motor.h"
-#include "../include/Constants.h"
-#include <iostream>
-#include <cstdlib>
+#include "Motor.h"
+#include <wiringPi.h>
+#include <softPwm.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
 
-Motor::Motor(int pin) : motorPin(pin), isEnabled(false) {
-    if (wiringPiSetupGpio() == -1) {
-        throw std::runtime_error("WiringPi 초기화 실패");
+Motor::Motor(int pin) : motorPin(pin) {
+    if (wiringPiSetup() == -1) {
+        printf("WiringPi 초기화 실패\n");
+        exit(1);
     }
 
-    if (softPwmCreate(motorPin, 0, PWM_RANGE) != 0) {
-        throw std::runtime_error("PWM 설정 실패");
+    if (softPwmCreate(motorPin, 0, 100) != 0) {
+        printf("PWM 설정 실패\n");
+        exit(1);
     }
-
-    stop();
+    
+    softPwmWrite(motorPin, 0);
 }
 
 Motor::~Motor() {
     stop();
 }
 
-void Motor::setSpeed(int speed) {
-    if (speed < -PWM_RANGE) speed = -PWM_RANGE;
-    if (speed > PWM_RANGE) speed = PWM_RANGE;
+void Motor::setDegree(int degree) {
+    if (degree > 180) degree = 180;
+    if (degree < 0) degree = 0;
 
-    softPwmWrite(motorPin, speed);
-
-    if (speed < 0) {
-        std::cout << "모터 역방향 회전 (PWM: " << abs(speed) << ")\n";
-    } else if (speed > 0) {
-        std::cout << "모터 정방향 회전 (PWM: " << speed << ")\n";
-    } else {
-        std::cout << "모터 정지\n";
-    }
+    float duty = MOTOR_MIN_DUTY + (degree * (MOTOR_MAX_DUTY - MOTOR_MIN_DUTY) / 180.0);
+    softPwmWrite(motorPin, (int)duty);
+    usleep(300000);
+    softPwmWrite(motorPin, 0);
+    
+    printf("모터 각도 설정: %d도\n", degree);
 }
 
 void Motor::stop() {
-    setSpeed(0);
+    softPwmWrite(motorPin, 0);
 }

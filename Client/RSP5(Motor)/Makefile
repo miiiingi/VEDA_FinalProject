@@ -2,88 +2,53 @@
 CXX = g++
 CXXFLAGS = -Wall -std=c++11
 
+# 디렉토리 설정
+SRCDIR = src
+INCDIR = include
+OBJDIR = obj
+
 # 라이브러리 설정
-LIBS = -lwiringPi -lpthread
+LIBS = -lwiringPi
 
-# 소스 파일 디렉토리
-SRC_DIR = src
-INC_DIR = include
-OBJ_DIR = obj
+# Include 경로 설정
+INCLUDES = -I$(INCDIR)
 
-# 소스 파일 목록
-SOURCES = $(wildcard $(SRC_DIR)/*.cpp)
-OBJECTS = $(SOURCES:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
-DEPS = $(OBJECTS:.o=.d)
+# 소스 파일들
+SRCS = $(wildcard $(SRCDIR)/*.cpp)
 
-# 헤더 파일 디렉토리 설정
-INCLUDES = -I$(INC_DIR)
+# 오브젝트 파일들 (obj 디렉토리에 생성)
+OBJS = $(SRCS:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
 
 # 실행 파일 이름
 TARGET = motor
 
-# 기본 타겟
-all: directories $(TARGET)
+# obj 디렉토리 생성
+$(shell mkdir -p $(OBJDIR))
 
-# 디렉토리 생성
-directories:
-	@mkdir -p $(OBJ_DIR)
+# 기본 타겟
+all: $(TARGET)
 
 # 실행 파일 생성 규칙
-$(TARGET): $(OBJECTS)
-	$(CXX) $(OBJECTS) -o $(TARGET) $(LIBS)
+$(TARGET): $(OBJS)
+	$(CXX) $(OBJS) -o $(TARGET) $(LIBS)
 
 # 오브젝트 파일 생성 규칙
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
+$(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
-	$(CXX) $(CXXFLAGS) $(INCLUDES) -MM $< > $(OBJ_DIR)/$*.d
-
-# 의존성 파일 포함
--include $(DEPS)
 
 # clean 타겟
 clean:
-	rm -rf $(OBJ_DIR) $(TARGET)
+	rm -rf $(OBJDIR) $(TARGET)
 
-# 파일 구조 생성
-init:
-	@mkdir -p $(SRC_DIR)
-	@mkdir -p $(INC_DIR)
-	@mkdir -p $(OBJ_DIR)
-	@echo "Created directory structure"
+# 실행 타겟
+run: $(TARGET)
+	sudo ./$(TARGET)
 
-# phony 타겟 선언
-.PHONY: all clean directories init
+# CAN 설정 타겟
+setup_can:
+	sudo ifconfig can0 down
+	sudo ip link set can0 type can bitrate 100000
+	sudo ifconfig can0 up
 
-# 디버그 빌드 설정
-debug: CXXFLAGS += -g -DDEBUG
-debug: all
-
-# 릴리즈 빌드 설정
-release: CXXFLAGS += -O2 -DNDEBUG
-release: all
-
-# 설치 규칙
-install: $(TARGET)
-	@sudo cp $(TARGET) /usr/local/bin
-	@echo "Installation completed"
-
-# 제거 규칙
-uninstall:
-	@sudo rm -f /usr/local/bin/$(TARGET)
-	@echo "Uninstallation completed"
-
-# 테스트 규칙
-test: $(TARGET)
-	./$(TARGET)
-
-# 도움말
-help:
-	@echo "Available targets:"
-	@echo "  make        - Build the project"
-	@echo "  make clean  - Remove build files"
-	@echo "  make init   - Create directory structure"
-	@echo "  make debug  - Build with debug symbols"
-	@echo "  make release- Build with optimization"
-	@echo "  make install- Install the program"
-	@echo "  make test   - Run the program"
-	@echo "  make help   - Show this help message"
+# .PHONY 설정
+.PHONY: all clean run setup_can

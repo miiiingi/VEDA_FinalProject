@@ -11,29 +11,27 @@
 #include <sys/ioctl.h>
 #include <string.h>
 
-#define MOTOR_PIN 27    // GPIO 27 사용
-#define PWM_RANGE 255   // PWM 범위 설정
-#define FIXED_SPEED 150 // 정방향 PWM 값
-#define REVERSE_SPEED -150 // 역방향 PWM 값
+#define SERVO_PIN 1     // 서보 모터 핀
+#define SERVO_MIN_DUTY 5  // 최소 듀티비 (%)
+#define SERVO_MAX_DUTY 25 // 최대 듀티비 (%)
 #define CAN_INTERFACE "can0" // CAN 인터페이스 이름
 #define MOTOR_DELAY 5 // 모터 방향 전환 전 대기 시간(초)
 
-class MotorController {
+class ServoController {
 private:
-    int motorPin;
-    bool isEnabled;
+    int servoPin;
     int canSocket;
 
 public:
-    MotorController(int pin = MOTOR_PIN) : motorPin(pin), isEnabled(false) {
+    ServoController(int pin = SERVO_PIN) : servoPin(pin) {
         // WiringPi 초기화
-        if (wiringPiSetupGpio() == -1) {
+        if (wiringPiSetup() == -1) {
             printf("WiringPi 초기화 실패\n");
             exit(1);
         }
 
         // 소프트웨어 PWM 설정
-        if (softPwmCreate(motorPin, 0, PWM_RANGE) != 0) {
+        if (softPwmCreate(servoPin, 0, 100) != 0) {
             printf("PWM 설정 실패\n");
             exit(1);
         }
@@ -41,28 +39,25 @@ public:
         // CAN 초기화
         setupCAN();
 
-        // 초기 상태: 모터 정지
-        softPwmWrite(motorPin, 0);
+        // 초기 상태: 서보 중립
+        softPwmWrite(servoPin, 0);
     }
 
-    ~MotorController() {
-        // 모터 정지
-        softPwmWrite(motorPin, 0);
+    ~ServoController() {
+        // 서보 중립
+        softPwmWrite(servoPin, 0);
         close(canSocket);
     }
 
     void setupCAN() {
-        // CAN 초기화 명령 실행
         printf("CAN 초기화 시작...\n");
 
-        // CAN 소켓 생성
         canSocket = socket(PF_CAN, SOCK_RAW, CAN_RAW);
         if (canSocket < 0) {
             perror("CAN 소켓 생성 실패");
             exit(1);
         }
 
-        // CAN 인터페이스 설정
         struct ifreq ifr;
         strcpy(ifr.ifr_name, CAN_INTERFACE);
         if (ioctl(canSocket, SIOCGIFINDEX, &ifr) < 0) {
@@ -70,7 +65,6 @@ public:
             exit(1);
         }
 
-        // CAN 소켓 바인딩
         struct sockaddr_can addr;
         addr.can_family = PF_CAN;
         addr.can_ifindex = ifr.ifr_ifindex;
@@ -79,7 +73,6 @@ public:
             exit(1);
         }
 
-        // CAN 필터 설정 (ID: 0x001, 0x002, 0x123 수신)
         struct can_filter rfilter[2];
         rfilter[0].can_id = 0x001;
         rfilter[0].can_mask = CAN_SFF_MASK;
@@ -90,22 +83,16 @@ public:
         printf("CAN 초기화 완료\n");
     }
 
-    void setMotorSpeed(int speed) {
-        // 속도값 범위 제한
-        if (speed < -PWM_RANGE) speed = -PWM_RANGE;
-        if (speed > PWM_RANGE) speed = PWM_RANGE;
+    void setServoDegree(int degree) {
+        if (degree > 180) degree = 180;
+        if (degree < 0) degree = 0;
 
-        // PWM 신호 출력
-        softPwmWrite(motorPin, abs(speed));  // PWM은 절대값으로 설정
+        float duty = SERVO_MIN_DUTY + (degree * (SERVO_MAX_DUTY - SERVO_MIN_DUTY) / 180.0);
+        softPwmWrite(servoPin, (int)duty);
+        usleep(300000); // 0.3초 대기
+        softPwmWrite(servoPin, 0);
         
-        // 속도가 음수면 역방향 회전을 의미
-        if (speed < 0) {
-            printf("모터 역방향 회전 (PWM: %d)\n", abs(speed));
-        } else if (speed > 0) {
-            printf("모터 정방향 회전 (PWM: %d)\n", speed);
-        } else {
-            printf("모터 정지\n");
-        }
+        printf("서보 모터 각도 설정: %d도\n", degree);
     }
 
     void processCANMessages() {
@@ -122,58 +109,43 @@ public:
             printf("CAN ID: 0x%X\n", frame.can_id);
             printf("데이터 길이: %d\n", frame.can_dlc);
             
-            // 모든 데이터 바이트 출력
             for(int i = 0; i < frame.can_dlc; i++) {
                 printf("데이터[%d]: %d\n", i, frame.data[i]);
             }
 
-            // ID 0x001 메시지 처리
             if (frame.can_id == 0x001) {
-                // 얼굴 인식 성공, 비밀번호 입력 성공 시
                 if (frame.data[0] == 0b00000011) {
                     printf("얼굴 인식 성공!\n");
-                    printf("비밀번호 입력 성공!\n");    //Qt 메세지로 띄우기
+                    printf("비밀번호 입력 성공!\n");
                     
-                    // 정방향으로 모터 구동 (잠금 해제)
-                    printf("잠금 해제 - 모터 정방향 구동 시작 (PWM: %d)\n", FIXED_SPEED);
-                    setMotorSpeed(FIXED_SPEED);
-                    sleep(1);
-                    setMotorSpeed(0);
-
-                    // 5초 대기
+                    // 잠금 해제 - 서보 모터 150도
+                    printf("잠금 해제 - 서보 모터 구동\n");
+                    setServoDegree(150);
                     sleep(MOTOR_DELAY);
                     
                     // 자동 잠금 메시지 전송
-                    frame.can_id = 0x001;
-                    // 3-byte data (만약을 위해 남겨 놓음)
+                    frame.can_id = 0x002;
                     frame.can_dlc = 3;
                     frame.data[0] = 0b00000100;
                     write(canSocket, &frame, sizeof(frame));
 
-                    // 역방향으로 모터 구동 (자동 잠금)
-                    printf("자동 잠금 - 모터 역방향 구동 시작 (PWM: %d)\n", REVERSE_SPEED);
-                    setMotorSpeed(REVERSE_SPEED);
-                    
-                    // 1초 대기 후 정지
-                    sleep(1);
-                    setMotorSpeed(0);
+                    frame.can_id = 0x001;
+                    write(canSocket, &frame, sizeof(frame));
+
+                    // 잠금 - 서보 모터 50도
+                    printf("자동 잠금 - 서보 모터 구동\n");
+                    setServoDegree(50);
                     printf("잠금 장치 구동 완료\n");
                 }
-                // 얼굴x, 비번x
                 else if (frame.data[0] == 0b00000000) {
-                    setMotorSpeed(0);
                     printf("얼굴이 일치하지 않습니다.\n");
                     printf("비밀번호가 틀렸습니다.\n");
                 }
-                // 얼굴o, 비번x
                 else if (frame.data[0] == 0b00000001) {
-                    setMotorSpeed(0);
                     printf("얼굴 인식 성공!\n");
                     printf("비밀번호가 틀렸습니다.\n");
                 }
-                // 얼굴x, 비번o
                 else if (frame.data[0] == 0b00000010) {
-                    setMotorSpeed(0);
                     printf("얼굴이 일치하지 않습니다.\n");
                     printf("비밀번호 입력 성공!\n");
                 }
@@ -183,15 +155,15 @@ public:
 };
 
 int main() {
-    printf("CAN 모터 제어 프로그램 시작 (GPIO 27)\n");
+    printf("CAN 서보 모터 제어 프로그램 시작 (WiringPi Pin 1)\n");
     system("sudo ifconfig can0 down");
     system("sudo ip link set can0 type can bitrate 100000");
     system("sudo ifconfig can0 up");
     
-    MotorController motor;
+    ServoController servo;
     
     while(1) {
-        motor.processCANMessages();
+        servo.processCANMessages();
     }
     return 0;
 }

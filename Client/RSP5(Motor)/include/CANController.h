@@ -1,22 +1,23 @@
-#pragma once
 #ifndef CAN_CONTROLLER_H
 #define CAN_CONTROLLER_H
 
 #include <linux/can.h>
-#include <string>
+#include "Motor.h"
 
 class CANController {
 private:
     int canSocket;
-    void setupFilters();
+    Motor& motor;
+    static const char* CAN_INTERFACE;
+    static const int MOTOR_DELAY = 5;
+
+    void setupCAN();
+    void sendCANMessage(struct can_frame& frame);
 
 public:
-    CANController();
+    CANController(Motor& motorRef);
     ~CANController();
-    void initialize();
-    int getSocket() const { return canSocket; }
-    bool receiveMessage(struct can_frame& frame);
-    bool sendMessage(const struct can_frame& frame);
+    void processMessages();
 };
 
 #endif

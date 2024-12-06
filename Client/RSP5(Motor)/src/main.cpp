@@ -1,20 +1,20 @@
-#include "../include/DoorLockController.h"
-#include <cstdlib>
-#include <iostream>
+#include "../include/Motor.h"
+#include "../include/CANController.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 int main() {
-    std::cout << "CAN 모터 제어 프로그램 시작 (GPIO 27)\n";
+    printf("CAN 모터 제어 프로그램 시작 (WiringPi Pin 1)\n");
     
     system("sudo ifconfig can0 down");
     system("sudo ip link set can0 type can bitrate 100000");
     system("sudo ifconfig can0 up");
     
-    try {
-        DoorLockController controller;
-        controller.run();
-    } catch (const std::exception& e) {
-        std::cerr << "오류 발생: " << e.what() << "\n";
-        return 1;
+    Motor motor(1);
+    CANController canController(motor);
+    
+    while(1) {
+        canController.processMessages();
     }
     
     return 0;

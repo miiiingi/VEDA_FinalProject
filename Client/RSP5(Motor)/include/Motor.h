@@ -1,19 +1,16 @@
-#pragma once
 #ifndef MOTOR_H
 #define MOTOR_H
-
-#include <wiringPi.h>
-#include <softPwm.h>
 
 class Motor {
 private:
     int motorPin;
-    bool isEnabled;
+    static const int MOTOR_MIN_DUTY = 5;
+    static const int MOTOR_MAX_DUTY = 25;
 
 public:
-    Motor(int pin);
+    Motor(int pin = 1);
     ~Motor();
-    void setSpeed(int speed);
+    void setDegree(int degree);
     void stop();
 };
 
