@@ -3,3 +3,4 @@
 *.user
 *.autosave
 __pycache__
+face_recognition_ui.py
