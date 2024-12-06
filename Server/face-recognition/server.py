@@ -349,6 +349,8 @@ class FaceRecognitionApp(QMainWindow, Ui_FaceRecognitionWindow):
             print(f"GIF 파일을 찾을 수 없습니다: {self.active_siren_green_image_path}")
             self.icon_siren_green_movie = None
 
+        self.siren_button.clicked.connect(self.start_red_siren_animation)
+
     def start_recognition(self):
         if not self.face_recognition_thread.isRunning():
             self.face_recognition_thread.start()
