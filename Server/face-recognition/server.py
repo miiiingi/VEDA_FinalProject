@@ -16,9 +16,9 @@ from face_recognition_ui import Ui_FaceRecognitionWindow
 
 class TCPServer(QObject):
     emit_tcp_signal = Signal(bytearray)
-    def __init__(self, result_queue, plain_text, parent=None, host='0.0.0.0', port=5100):
+    def __init__(self, result_queue, logListWidget, parent=None, host='0.0.0.0', port=5100):
         super().__init__()
-        self.plainTextEdit = plain_text
+        self.logListWidget = logListWidget 
         self.server_socket = None
         self.host = host
         self.port = port
@@ -79,12 +79,12 @@ class TCPServer(QObject):
         try:
             self.setup_socket()
             print(f"TCP Server waiting for connections on {self.host}:{self.port}")
-            self.plainTextEdit.appendPlainText(f"TCP Server waiting for connections on {self.host}:{self.port}")
+            self.logListWidget.addItem(f"TCP Server waiting for connections on {self.host}:{self.port}")
             while self.running:
                 try:
                     client_socket, client_addr = self.server_socket.accept()
                     print(f"Client connected from {client_addr[0]}")
-                    self.plainTextEdit.appendPlainText(f"Client connected from {client_addr[0]}")
+                    self.logListWidget.addItem(f"Client connected from {client_addr[0]}")
                     self.client_lock.lock()
                     self.client_sockets.append(client_socket)
                     self.client_lock.unlock()
@@ -237,7 +237,7 @@ class FaceRecognitionApp(QMainWindow, Ui_FaceRecognitionWindow):
         self.face_recognition_worker.image_update_signal.connect(self.update_frame)
 
         self.tcp_thread = QThread()
-        self.tcp_server = TCPServer(result_queue=self.result_queue, plain_text = self.plainTextEdit)
+        self.tcp_server = TCPServer(result_queue=self.result_queue, logListWidget = self.logListWidget)
         self.tcp_server.moveToThread(self.tcp_thread)
         self.tcp_thread.started.connect(self.tcp_server.run)
         self.tcp_server.emit_tcp_signal.connect(self.function_mapping)
@@ -387,38 +387,37 @@ class FaceRecognitionApp(QMainWindow, Ui_FaceRecognitionWindow):
     def function_mapping(self, tcp_received_signal):
         received = int(chr(tcp_received_signal[0]))
         print(f"tcp received signal: {received}")
-        # QPlainTextEdit에 메시지 추가
         if received == 0:
             self.start_bell_animation()
             self.start_red_siren_animation()
-            self.plainTextEdit.appendPlainText("미등록 출입자가 출입을 시도하였습니다.")
+            self.logListWidget.addItem("미등록 출입자가 출입을 시도하였습니다.")
         elif received == 1:
             self.wrong_passwd_count += 1
             self.start_bell_animation()
             if(self.wrong_passwd_count >= 3):
-                self.plainTextEdit.appendPlainText("출입자가 3번이상 비밀번호를 틀렸습니다.")
+                self.logListWidget.addItem("출입자가 3번이상 비밀번호를 틀렸습니다.")
                 self.start_red_siren_animation()
                 self.wrong_passwd_count = 0
             else:
-                self.plainTextEdit.appendPlainText("출입자가 입력한 비밀번호가 틀렸습니다.")
+                self.logListWidget.addItem("출입자가 입력한 비밀번호가 틀렸습니다.")
                 self.start_blue_siren_animation()
         elif received == 2:
             self.start_bell_animation()
             self.start_red_siren_animation()
-            self.plainTextEdit.appendPlainText("미등록 출입자가 출입을 시도하였습니다.")
+            self.logListWidget.addItem("미등록 출입자가 출입을 시도하였습니다.")
         elif received == 3:
             self.start_bell_animation()
             self.start_door_animation()
             self.start_green_siren_animation()
-            self.plainTextEdit.appendPlainText("출입문이 개방되었습니다.")
+            self.logListWidget.addItem("출입문이 개방되었습니다.")
         elif received == 4:
             self.start_bell_animation()
             self.start_door_animation()
             self.start_green_siren_animation()
-            self.plainTextEdit.appendPlainText("출입문이 자동 잠금되었습니다.")
+            self.logListWidget.addItem("출입문이 자동 잠금되었습니다.")
         elif received == 5:
             self.start_bell_animation()
-            self.plainTextEdit.appendPlainText("미등록 출입자가 벨을 호출하였습니다.")
+            self.logListWidget.addItem("미등록 출입자가 벨을 호출하였습니다.")
 
     def start_bell_animation(self):
         if self.icon_bell_movie:
