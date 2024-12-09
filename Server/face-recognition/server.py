@@ -146,7 +146,7 @@ class TCPServer(QObject):
 class FaceRecognitionThread(QObject):
     image_update_signal = Signal(np.ndarray)
     cropped_image_update_signal = Signal(np.ndarray)
-    cropped_image_log_signal = Signal(np.ndarray)
+    image_cropping_signal = Signal(np.ndarray)
     def __init__(self, result_queue, cropping):
         super().__init__()
         self.result_queue = result_queue
@@ -211,7 +211,6 @@ class FaceRecognitionThread(QObject):
                     cv2.putText(frame, name, (left + 6, bottom - 6), font, 0.6, (255, 255, 255), 1)
 
                     if self.cropping:
-                        print("cropped_image_update_signal!!!")
                         cropped_face = frame[top:bottom, left:right]
                         self.cropped_image_update_signal.emit(cropped_face)
                         self.cropping = False
@@ -250,8 +249,8 @@ class FaceRecognitionApp(QMainWindow, Ui_FaceRecognitionWindow):
         self.face_recognition_worker.moveToThread(self.face_recognition_thread)
         self.face_recognition_thread.started.connect(self.face_recognition_worker.run)
         self.face_recognition_worker.image_update_signal.connect(self.update_frame)
-        self.face_recognition_worker.cropped_image_log_signal.connect(self.receive_cropped_image_log)
-        self.face_recognition_worker.cropped_image_update_signal.connect(self.receive_cropped_image)
+        self.face_recognition_worker.image_cropping_signal.connect(self.receive_cropping_signal)
+        self.face_recognition_worker.cropped_image_update_signal.connect(self.display_cropped_image)
 
         self.tcp_thread = QThread()
         self.tcp_server = TCPServer(result_queue=self.result_queue, logListWidget = self.logListWidget)
@@ -269,28 +268,36 @@ class FaceRecognitionApp(QMainWindow, Ui_FaceRecognitionWindow):
         _, buffer = cv2.imencode('.jpg', frame)
         return base64.b64encode(buffer).decode('utf-8')
 
-    def receive_cropped_image_log(self, boolean):
+    def receive_cropping_signal(self, boolean):
         self.face_recognition_worker.cropping = boolean
 
-    def receive_cropped_image(self, image):
-        base64_method ={
+    def display_cropped_image(self, image):
+        base64_method = {
             'log_message': self.log_message,
             'image': self.frame_to_base64(image)
         }
+
+        # 파일이 존재하면 기존 데이터 로드
         if os.path.isfile('logs/result.csv'):
-            print(f"receive cropped image index: {len(self.log_dataframe)}")
             self.log_dataframe = pd.read_csv('logs/result.csv')
-            self.log_dataframe.loc[len(self.log_dataframe)] = base64_method
         else:
-            print(f"data frame is new. Recording is started!!!")
-            self.log_dataframe = pd.DataFrame([base64_method])
+            # 존재하지 않을 경우 빈 데이터프레임 생성
+            self.log_dataframe = pd.DataFrame(columns=['log_message', 'image'])
         
+        # 새 행을 데이터프레임으로 변환
+        new_row = pd.DataFrame([base64_method])
+
+        # 기존 데이터프레임과 새 행 결합
+        self.log_dataframe = pd.concat([self.log_dataframe, new_row], ignore_index=True)
+
         os.makedirs('logs/', exist_ok = True)
-        self.log_dataframe.to_csv('logs/result.csv')
+
+        if self.log_dataframe is not None:
+            self.log_dataframe.to_csv('logs/result.csv', index=False)
     
     def show_log_image(self, item):
         index = self.logListWidget.row(item)
-        data_frame = pd.read_csv('logs/result.csv')
+        data_frame = pd.read_csv('logs/result.csv', index_col = False)
         selected_item_text = self.logListWidget.item(index).text()
         print(f"show log: {selected_item_text}")
         matching_row = data_frame[data_frame['log_message'] == selected_item_text]
@@ -453,8 +460,7 @@ class FaceRecognitionApp(QMainWindow, Ui_FaceRecognitionWindow):
     def function_mapping(self, tcp_received_signal):
         self.log_message = ""
         received = int(chr(tcp_received_signal[0]))
-        current_time = datetime.datetime.now().strftime("%H:%M:%S") 
-        print(f"tcp received signal: {received}")
+        current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         try:
             if received == 0:
                 self.start_bell_animation()
@@ -492,7 +498,7 @@ class FaceRecognitionApp(QMainWindow, Ui_FaceRecognitionWindow):
         
         self.log_message = f"[{received}][{current_time}][{message}]"
         self.logListWidget.addItem(self.log_message)
-        self.face_recognition_worker.cropped_image_log_signal.emit(True)
+        self.face_recognition_worker.image_cropping_signal.emit(True)
         
 
     def start_bell_animation(self):
