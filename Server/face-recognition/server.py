@@ -9,6 +9,9 @@ from collections import Counter
 import face_recognition
 import cv2
 import numpy as np
+import datetime
+import pandas as pd
+import base64
 from PySide6.QtWidgets import (QApplication, QVBoxLayout, QLabel, QHBoxLayout, QPushButton, QWidget, QMainWindow)
 from PySide6.QtGui import QImage, QPixmap, QMovie
 from PySide6.QtCore import Qt, QThread, Signal, QTimer, QObject, Slot, QMutex, QFile, QIODevice
@@ -16,9 +19,9 @@ from face_recognition_ui import Ui_FaceRecognitionWindow
 
 class TCPServer(QObject):
     emit_tcp_signal = Signal(bytearray)
-    def __init__(self, result_queue, plain_text, parent=None, host='0.0.0.0', port=5100):
+    def __init__(self, result_queue, logListWidget, parent=None, host='0.0.0.0', port=5100):
         super().__init__()
-        self.plainTextEdit = plain_text
+        self.logListWidget = logListWidget 
         self.server_socket = None
         self.host = host
         self.port = port
@@ -79,12 +82,12 @@ class TCPServer(QObject):
         try:
             self.setup_socket()
             print(f"TCP Server waiting for connections on {self.host}:{self.port}")
-            self.plainTextEdit.appendPlainText(f"TCP Server waiting for connections on {self.host}:{self.port}")
+            self.logListWidget.addItem(f"TCP Server waiting for connections on {self.host}:{self.port}")
             while self.running:
                 try:
                     client_socket, client_addr = self.server_socket.accept()
                     print(f"Client connected from {client_addr[0]}")
-                    self.plainTextEdit.appendPlainText(f"Client connected from {client_addr[0]}")
+                    self.logListWidget.addItem(f"Client connected from {client_addr[0]}")
                     self.client_lock.lock()
                     self.client_sockets.append(client_socket)
                     self.client_lock.unlock()
@@ -142,24 +145,35 @@ class TCPServer(QObject):
 
 class FaceRecognitionThread(QObject):
     image_update_signal = Signal(np.ndarray)
-    def __init__(self, result_queue):
+    cropped_image_update_signal = Signal(np.ndarray)
+    image_cropping_signal = Signal(np.ndarray)
+    def __init__(self, result_queue, cropping):
         super().__init__()
         self.result_queue = result_queue
         self.running = True
         self.video_capture = None
+        self.cropping = cropping
 
     @Slot()
     def run(self):
         video_capture = cv2.VideoCapture(0)
         try:
-            mingi_image = face_recognition.load_image_file("mingi.jpg")
+            junsup_image = face_recognition.load_image_file("asset/junsup.png")
+            jihwan_image = face_recognition.load_image_file("asset/jihwan.png")
+            mingi_image = face_recognition.load_image_file("asset/mingi.png")
             mingi_face_encoding = face_recognition.face_encodings(mingi_image)[0]
+            junsup_face_encoding = face_recognition.face_encodings(junsup_image)[0]
+            jihwan_face_encoding = face_recognition.face_encodings(jihwan_image)[0]
 
             known_face_encodings = [
+		junsup_face_encoding,
+		jihwan_face_encoding,
                 mingi_face_encoding
             ]
             known_face_names = [
-                "mingi"
+		"junsup",
+		"jihwan",
+                "mingi",
             ]
 
             process_this_frame = True
@@ -182,11 +196,13 @@ class FaceRecognitionThread(QObject):
                     face_names = []
                     for face_encoding in face_encodings:
                         matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
+                        # 또는 더 정확한 거리 기반 방식 사용
+                        face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
+                        best_match_index = np.argmin(face_distances)
                         name = "Unknown"
 
-                        if True in matches:
-                            first_match_index = matches.index(True)
-                            name = known_face_names[first_match_index]
+                        if face_distances[best_match_index] < 0.35:
+                            name = known_face_names[best_match_index]
 
                         face_names.append(name)
                         self.result_queue.put(name)
@@ -203,6 +219,11 @@ class FaceRecognitionThread(QObject):
                     cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 0, 255), cv2.FILLED)
                     font = cv2.FONT_HERSHEY_DUPLEX
                     cv2.putText(frame, name, (left + 6, bottom - 6), font, 0.6, (255, 255, 255), 1)
+
+                    if self.cropping:
+                        cropped_face = frame[top-35:bottom+35, left-35:right+35]
+                        self.cropped_image_update_signal.emit(cropped_face)
+                        self.cropping = False
 
                 frame = cv2.resize(frame, (320, 240))
                 self.image_update_signal.emit(frame)
@@ -225,19 +246,24 @@ class FaceRecognitionApp(QMainWindow, Ui_FaceRecognitionWindow):
         super().__init__()
         self.setupUi(self)
         self.wrong_passwd_count = 0
+        self.cropping = False
+        self.log_dataframe = pd.DataFrame()
+        self.logListWidget.itemClicked.connect(self.show_log_image)
         self.setup_bell_icon()
         self.setup_door_icon()
         self.setup_siren_icon()
 
         self.result_queue = queue.Queue()
         self.face_recognition_thread = QThread()
-        self.face_recognition_worker = FaceRecognitionThread(self.result_queue)
+        self.face_recognition_worker = FaceRecognitionThread(self.result_queue, self.cropping)
         self.face_recognition_worker.moveToThread(self.face_recognition_thread)
         self.face_recognition_thread.started.connect(self.face_recognition_worker.run)
         self.face_recognition_worker.image_update_signal.connect(self.update_frame)
+        self.face_recognition_worker.image_cropping_signal.connect(self.receive_cropping_signal)
+        self.face_recognition_worker.cropped_image_update_signal.connect(self.display_cropped_image)
 
         self.tcp_thread = QThread()
-        self.tcp_server = TCPServer(result_queue=self.result_queue, plain_text = self.plainTextEdit)
+        self.tcp_server = TCPServer(result_queue=self.result_queue, logListWidget = self.logListWidget)
         self.tcp_server.moveToThread(self.tcp_thread)
         self.tcp_thread.started.connect(self.tcp_server.run)
         self.tcp_server.emit_tcp_signal.connect(self.function_mapping)
@@ -245,6 +271,65 @@ class FaceRecognitionApp(QMainWindow, Ui_FaceRecognitionWindow):
         # 버튼 연결
         self.start_button.clicked.connect(self.start_recognition)
         self.stop_button.clicked.connect(self.stop_recognition)
+    
+    def frame_to_base64(self, frame):
+        if frame is None:
+            return None
+        _, buffer = cv2.imencode('.jpg', frame)
+        return base64.b64encode(buffer).decode('utf-8')
+
+    def receive_cropping_signal(self, boolean):
+        self.face_recognition_worker.cropping = boolean
+
+    def display_cropped_image(self, image):
+        base64_method = {
+            'log_message': self.log_message,
+            'image': self.frame_to_base64(image)
+        }
+
+        # 파일이 존재하면 기존 데이터 로드
+        if os.path.isfile('logs/result.csv'):
+            self.log_dataframe = pd.read_csv('logs/result.csv')
+        else:
+            # 존재하지 않을 경우 빈 데이터프레임 생성
+            self.log_dataframe = pd.DataFrame(columns=['log_message', 'image'])
+        
+        # 새 행을 데이터프레임으로 변환
+        new_row = pd.DataFrame([base64_method])
+
+        # 기존 데이터프레임과 새 행 결합
+        self.log_dataframe = pd.concat([self.log_dataframe, new_row], ignore_index=True)
+
+        os.makedirs('logs/', exist_ok = True)
+
+        if self.log_dataframe is not None:
+            self.log_dataframe.to_csv('logs/result.csv', index=False)
+    
+    def show_log_image(self, item):
+        index = self.logListWidget.row(item)
+        data_frame = pd.read_csv('logs/result.csv', index_col = False)
+        selected_item_text = self.logListWidget.item(index).text()
+        print(f"show log: {selected_item_text}")
+        matching_row = data_frame[data_frame['log_message'] == selected_item_text]
+        if not matching_row.empty:
+            # base64 인코딩된 이미지 디코딩
+            base64_image = matching_row['image'].values[0]
+            decoded_image = base64.b64decode(base64_image)
+            
+            # 이미지를 numpy 배열로 변환
+            nparr = np.frombuffer(decoded_image, np.uint8)
+            image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+            # OpenCV 이미지를 QPixmap으로 변환
+            height, width, channel = image.shape
+            bytes_per_line = 3 * width
+            q_image = QImage(image.data, width, height, bytes_per_line, QImage.Format_RGB888).rgbSwapped()
+            pixmap = QPixmap.fromImage(q_image)
+            
+            # 비디오 라벨에 이미지 표시
+            self.video_label_2.setPixmap(pixmap.scaled(self.video_label_2.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        else:
+            self.video_label_2.clear()
 
     def setup_bell_icon(self):
         self.active_bell_image_path = 'asset/icon_bell_active.gif'
@@ -349,6 +434,8 @@ class FaceRecognitionApp(QMainWindow, Ui_FaceRecognitionWindow):
             print(f"GIF 파일을 찾을 수 없습니다: {self.active_siren_green_image_path}")
             self.icon_siren_green_movie = None
 
+        self.siren_button.clicked.connect(self.start_red_siren_animation)
+
     def start_recognition(self):
         if not self.face_recognition_thread.isRunning():
             self.face_recognition_thread.start()
@@ -383,40 +470,48 @@ class FaceRecognitionApp(QMainWindow, Ui_FaceRecognitionWindow):
         ))
     
     def function_mapping(self, tcp_received_signal):
+        self.log_message = ""
         received = int(chr(tcp_received_signal[0]))
-        print(f"tcp received signal: {received}")
-        # QPlainTextEdit에 메시지 추가
-        if received == 0:
-            self.start_bell_animation()
-            self.start_red_siren_animation()
-            self.plainTextEdit.appendPlainText("미등록 출입자가 출입을 시도하였습니다.")
-        elif received == 1:
-            self.wrong_passwd_count += 1
-            self.start_bell_animation()
-            if(self.wrong_passwd_count >= 3):
-                self.plainTextEdit.appendPlainText("출입자가 3번이상 비밀번호를 틀렸습니다.")
+        current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        try:
+            if received == 0:
+                self.start_bell_animation()
                 self.start_red_siren_animation()
-                self.wrong_passwd_count = 0
-            else:
-                self.plainTextEdit.appendPlainText("출입자가 입력한 비밀번호가 틀렸습니다.")
-                self.start_blue_siren_animation()
-        elif received == 2:
-            self.start_bell_animation()
-            self.start_red_siren_animation()
-            self.plainTextEdit.appendPlainText("미등록 출입자가 출입을 시도하였습니다.")
-        elif received == 3:
-            self.start_bell_animation()
-            self.start_door_animation()
-            self.start_green_siren_animation()
-            self.plainTextEdit.appendPlainText("출입문이 개방되었습니다.")
-        elif received == 4:
-            self.start_bell_animation()
-            self.start_door_animation()
-            self.start_green_siren_animation()
-            self.plainTextEdit.appendPlainText("출입문이 자동 잠금되었습니다.")
-        elif received == 5:
-            self.start_bell_animation()
-            self.plainTextEdit.appendPlainText("미등록 출입자가 벨을 호출하였습니다.")
+                message = "미등록 출입자가 출입을 시도하였습니다."
+            elif received == 1:
+                self.wrong_passwd_count += 1
+                self.start_bell_animation()
+                if(self.wrong_passwd_count >= 3):
+                    message = "출입자가 3번이상 비밀번호를 틀렸습니다."
+                    self.start_red_siren_animation()
+                    self.wrong_passwd_count = 0
+                else:
+                    message = "출입자가 입력한 비밀번호가 틀렸습니다."
+                    self.start_blue_siren_animation()
+            elif received == 2:
+                self.start_bell_animation()
+                self.start_red_siren_animation()
+                message = "미등록 출입자가 출입을 시도하였습니다."
+            elif received == 3:
+                self.start_bell_animation()
+                self.start_door_animation()
+                self.start_green_siren_animation()
+                message = "출입문이 개방되었습니다."
+            elif received == 4:
+                self.start_bell_animation()
+                self.start_door_animation()
+                self.start_green_siren_animation()
+                message = "출입문이 자동 잠금되었습니다."
+            elif received == 5:
+                self.start_bell_animation()
+                message = "미등록 출입자가 벨을 호출하였습니다."
+        except Exception as e:
+            print(f"TCP Received Error: {e}")
+        
+        self.log_message = f"[{received}][{current_time}][{message}]"
+        self.logListWidget.addItem(self.log_message)
+        self.face_recognition_worker.image_cropping_signal.emit(True)
+        
 
     def start_bell_animation(self):
         if self.icon_bell_movie:
