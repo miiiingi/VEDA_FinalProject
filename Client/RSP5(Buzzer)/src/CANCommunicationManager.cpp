@@ -52,20 +52,20 @@ bool CANCommunicationManager::processCANMessage() {
             std::cout << "Open" << std::endl;    
             soundThread = std::thread(&SoundManager::playOpenTone, &soundManager);
             ledThread = std::thread(&LEDController::setGreenLED, &ledController);
-            failCounter = 0;
+            failCounter = 1;
         }
         else if(frame.data[0] == 4) {
             std::cout << "Closed" << std::endl; 
             ledThread = std::thread(&LEDController::setGreenLED, &ledController);   
             soundThread = std::thread(&SoundManager::playCloseTone, &soundManager);
-            failCounter = 0;
+            failCounter = 1;
         }
         else {
             if ((failCounter == 3)||(frame.data[0] == 0)||(frame.data[0]==2)) {
                 std::cout << "Alarm" << std::endl;
                 ledThread = std::thread(&LEDController::setRedLED, &ledController);
                 soundThread = std::thread(&SoundManager::playAlarmTone, &soundManager);
-                failCounter = 0;
+                failCounter = 1;
             }
             else if (frame.data[0]==1){
                 std::cout << "Retry password" << std::endl;

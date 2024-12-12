@@ -1,8 +1,8 @@
 #include "../inc/SoundManager.h"
+#include "../inc/Configure.h"
 #include <wiringPi.h>
 #include <softTone.h>
 
-#define SPKR 6
 
 void SoundManager::initialize() {
     pinMode(SPKR, OUTPUT);
