@@ -4,10 +4,10 @@
 #include "inc/CANCommunicationManager.h"
 #include "inc/Configure.h"
 
-volatile bool interruptFlag = false; // 플래그 변수
+volatile bool interruptFlag = false;
 
 void switchInterrupt() {
-    interruptFlag = true; // 플래그 설정
+    interruptFlag = true; 
 }
 
 int main() {
@@ -33,7 +33,7 @@ int main() {
             std::cout << "dingdong" << std::endl;
         }
 
-        canManager.processCANMessage(); // CAN 메시지 처리
+        canManager.processCANMessage(); 
     }
 
     soundManager.playResetTone();
