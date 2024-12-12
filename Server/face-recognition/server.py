@@ -158,14 +158,22 @@ class FaceRecognitionThread(QObject):
     def run(self):
         video_capture = cv2.VideoCapture(0)
         try:
-            mingi_image = face_recognition.load_image_file("mingi.jpg")
+            junsup_image = face_recognition.load_image_file("asset/junsup.png")
+            jihwan_image = face_recognition.load_image_file("asset/jihwan.png")
+            mingi_image = face_recognition.load_image_file("asset/mingi.png")
             mingi_face_encoding = face_recognition.face_encodings(mingi_image)[0]
+            junsup_face_encoding = face_recognition.face_encodings(junsup_image)[0]
+            jihwan_face_encoding = face_recognition.face_encodings(jihwan_image)[0]
 
             known_face_encodings = [
+		junsup_face_encoding,
+		jihwan_face_encoding,
                 mingi_face_encoding
             ]
             known_face_names = [
-                "mingi"
+		"junsup",
+		"jihwan",
+                "mingi",
             ]
 
             process_this_frame = True
@@ -188,11 +196,13 @@ class FaceRecognitionThread(QObject):
                     face_names = []
                     for face_encoding in face_encodings:
                         matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
+                        # 또는 더 정확한 거리 기반 방식 사용
+                        face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
+                        best_match_index = np.argmin(face_distances)
                         name = "Unknown"
 
-                        if True in matches:
-                            first_match_index = matches.index(True)
-                            name = known_face_names[first_match_index]
+                        if face_distances[best_match_index] < 0.35:
+                            name = known_face_names[best_match_index]
 
                         face_names.append(name)
                         self.result_queue.put(name)
@@ -211,7 +221,7 @@ class FaceRecognitionThread(QObject):
                     cv2.putText(frame, name, (left + 6, bottom - 6), font, 0.6, (255, 255, 255), 1)
 
                     if self.cropping:
-                        cropped_face = frame[top:bottom, left:right]
+                        cropped_face = frame[top-35:bottom+35, left-35:right+35]
                         self.cropped_image_update_signal.emit(cropped_face)
                         self.cropping = False
 
@@ -318,6 +328,8 @@ class FaceRecognitionApp(QMainWindow, Ui_FaceRecognitionWindow):
             
             # 비디오 라벨에 이미지 표시
             self.video_label_2.setPixmap(pixmap.scaled(self.video_label_2.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        else:
+            self.video_label_2.clear()
 
     def setup_bell_icon(self):
         self.active_bell_image_path = 'asset/icon_bell_active.gif'
