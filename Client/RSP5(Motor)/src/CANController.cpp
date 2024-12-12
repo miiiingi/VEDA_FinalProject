@@ -84,12 +84,9 @@ void CANController::processMessages() {
                 motor.setDegree(150);
                 sleep(MOTOR_DELAY);
                 
-                frame.can_id = 0x002;
+                frame.can_id = 0x003;
                 frame.can_dlc = 3;
                 frame.data[0] = 0b00000100;
-                sendCANMessage(frame);
-
-                frame.can_id = 0x001;
                 sendCANMessage(frame);
 
                 printf("자동 잠금 - 모터 구동\n");
