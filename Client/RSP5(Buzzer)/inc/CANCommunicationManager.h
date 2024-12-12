@@ -21,7 +21,7 @@ private:
     struct ifreq ifr{};
     LEDController& ledController;
     SoundManager& soundManager;
-    std::atomic<int> failCounter{0};
+    std::atomic<int> failCounter{1};
     std::thread soundThread;
     std::thread ledThread;
 

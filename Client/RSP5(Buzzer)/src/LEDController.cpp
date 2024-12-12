@@ -1,10 +1,8 @@
 #include "../inc/LEDController.h"
+#include "../inc/Configure.h"
 #include <wiringPi.h>
 
-#define RLED 1
-#define GLED 2
-#define BLED 28
-#define YLED 29
+
 
 void LEDController::initialize() {
     pinMode(RLED, OUTPUT);
