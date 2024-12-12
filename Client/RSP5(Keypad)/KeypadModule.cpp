@@ -13,17 +13,59 @@
 #include <atomic>
 #include <mutex>
 #include <errno.h>
+#include <openssl/sha.h>
+#include <fstream>
+#include <sstream>
+
+
 
 using namespace std;
 
 const int TCP_PORT = 5100;
 const int BUFFER_SIZE = 1024;
 const string SERVER_IP = "192.168.1.19";  // 젯슨 나노 IP
+const string PASSWORD_HASH_FILE = "password_hash.txt";
+
+// 비밀번호 해시 함수
+string hashPassword(const string& password){
+	unsigned char hash[SHA256_DIGEST_LENGTH];
+	SHA256((unsigned char*)password.c_str(), password.size(), hash);
+	ostringstream os;
+	for(int i = 0; i < SHA256_DIGEST_LENGTH; ++i) {
+		os << hex << setw(2) << setfill('0') << (int)hash[i];
+	}
+	return os.str();
+}
+
+// 비밀번호 해시 저장 함수
+void savePasswordHashToFile(const string& hash, const string& filename) {
+    ofstream file(filename);
+    if (file.is_open()) {
+        file << hash;
+        file.close();
+    }
+}
+
+// 비밀번호 해시 로드 함수
+string loadPasswordHashFromFile(const string& filename) {
+    ifstream file(filename);
+    string hash;
+    if (file.is_open()) {
+        getline(file, hash);
+        file.close();
+    }
+    return hash;
+}
+
+
 
 class AccessControlSystem {
 private:
-    const string CORRECT_PASSWORD = "1234";
-    const int MAX_PASSWORD_LENGTH = 20;
+    // 비밀번호 관련 변수
+    string stored_password_hash;	
+
+    // const string CORRECT_PASSWORD = "1234";
+    // const int MAX_PASSWORD_LENGTH = 20;
 
     // CAN 통신 관련 변수
     int can_socket_fd;
@@ -66,7 +108,51 @@ public:
         is_running(false) {
         memset(&frame, 0, sizeof(struct can_frame));
         memset(&server_addr, 0, sizeof(server_addr));
+	initializePasswordHash();
     }
+
+    // 초기 비밀번호 해시 초기화 메서드
+    void initializePasswordHash() {
+        string existing_hash = loadPasswordHashFromFile(PASSWORD_HASH_FILE);
+
+        if (existing_hash.empty()) {
+            // 첫 실행 시 기본 비밀번호로 해시 생성
+            string initial_password = "1234";
+            string initial_hash = hashPassword(initial_password);
+            savePasswordHashToFile(initial_hash, PASSWORD_HASH_FILE);
+            stored_password_hash = initial_hash;
+            cout << "초기 비밀번호 해시 생성 완료" << endl;
+        } else {
+            stored_password_hash = existing_hash;
+        }
+    }
+
+    // 비밀번호 변경 메서드
+    bool changePassword(const string& old_password, const string& new_password) {
+        // 기존 비밀번호 검증
+        string old_hash = hashPassword(old_password);
+
+        if (old_hash == stored_password_hash) {
+            // 새 비밀번호 해시 생성 및 저장
+            string new_hash = hashPassword(new_password);
+            savePasswordHashToFile(new_hash, PASSWORD_HASH_FILE);
+            stored_password_hash = new_hash;
+
+            cout << "비밀번호 변경 성공!" << endl;
+            return true;
+        }
+
+        cout << "비밀번호 변경 실패: 기존 비밀번호가 일치하지 않습니다." << endl;
+        return false;
+    }
+
+    // 비밀번호 검증 메서드 (해시 비교)
+    bool verifyPassword(const string& input_password) {
+        string input_hash = hashPassword(input_password);
+        password_verification_result = (input_hash == stored_password_hash);
+        return password_verification_result;
+    }
+
 
     ~AccessControlSystem() {
         // Stop the CAN receive thread before closing connections
@@ -262,11 +348,7 @@ public:
         return false;
     }
 
-    // 비밀번호 검증
-    bool verifyPassword(const string& input_password) {
-        password_verification_result = (input_password == CORRECT_PASSWORD);
-        return password_verification_result;
-    }
+
 
     // 최종 인증 상태 결정
     void determineFinalAuthentication() {
