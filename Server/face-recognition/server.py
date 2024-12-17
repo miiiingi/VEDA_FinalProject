@@ -6,12 +6,12 @@ import threading
 import queue
 import time
 from collections import Counter
-import face_recognition
 import cv2
 import numpy as np
 import datetime
 import pandas as pd
 import base64
+import dlib
 from PySide6.QtWidgets import (QApplication, QVBoxLayout, QLabel, QHBoxLayout, QPushButton, QWidget, QMainWindow)
 from PySide6.QtGui import QImage, QPixmap, QMovie
 from PySide6.QtCore import Qt, QThread, Signal, QTimer, QObject, Slot, QMutex, QFile, QIODevice
@@ -157,56 +157,88 @@ class FaceRecognitionThread(QObject):
     @Slot()
     def run(self):
         video_capture = cv2.VideoCapture(0)
+        
+        # DLIB 모델 로드
+        face_detector = dlib.get_frontal_face_detector()
+        face_recognition_model = dlib.face_recognition_model_v1('asset/dlib_face_recognition_resnet_model_v1.dat')
+        shape_predictor = dlib.shape_predictor('asset/shape_predictor_68_face_landmarks.dat')
+        
         try:
-            junsup_image = face_recognition.load_image_file("asset/junsup.png")
-            jihwan_image = face_recognition.load_image_file("asset/jihwan.png")
-            mingi_image = face_recognition.load_image_file("asset/mingi.png")
-            mingi_face_encoding = face_recognition.face_encodings(mingi_image)[0]
-            junsup_face_encoding = face_recognition.face_encodings(junsup_image)[0]
-            jihwan_face_encoding = face_recognition.face_encodings(jihwan_image)[0]
+            # 이미지 로드 및 인코딩
+            def get_face_encoding(image_path):
+                image = dlib.load_rgb_image(image_path)
+                faces = face_detector(image)
+                if len(faces) > 0:
+                    shape = shape_predictor(image, faces[0])
+                    face_descriptor = face_recognition_model.compute_face_descriptor(image, shape)
+                    return np.array(face_descriptor)
+                return None
 
+            mingi_image = get_face_encoding("asset/mingi.png")
+            junsup_image = get_face_encoding("asset/junsup.png")
+            jihwan_image = get_face_encoding("asset/jihwan.png")
+            
             known_face_encodings = [
-		junsup_face_encoding,
-		jihwan_face_encoding,
-                mingi_face_encoding
+                junsup_image,
+                jihwan_image,
+                mingi_image
             ]
             known_face_names = [
-		"junsup",
-		"jihwan",
+                "junsup",
+                "jihwan",
                 "mingi",
             ]
-
+            
             process_this_frame = True
-
             while self.running:
                 ret, frame = video_capture.read()
                 if not ret:
                     break
-
+                
                 if process_this_frame:
+                    # 프레임 크기 조정
                     small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
-                    rgb_small_frame = small_frame[:, :, ::-1]
-
-                    face_locations = face_recognition.face_locations(rgb_small_frame)
-                    face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
-
-                    if not face_encodings:
+                    
+                    # OpenCV 이미지를 RGB로 변환
+                    rgb_small_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
+                    
+                    # 얼굴 탐지
+                    faces = face_detector(rgb_small_frame, 1)
+                    
+                    # 얼굴이 없으면 Unknown 처리
+                    if len(faces) == 0:
                         self.result_queue.put("Unknown")
-
+                    
                     face_names = []
-                    for face_encoding in face_encodings:
-                        matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
-                        # 또는 더 정확한 거리 기반 방식 사용
-                        face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
-                        best_match_index = np.argmin(face_distances)
+                    face_locations = []
+                    for ind, face in enumerate(faces):
+                        face_location = []
+                        # 얼굴 랜드마크 추출
+                        shape = shape_predictor(rgb_small_frame, face)
+                        face_location.append(face.top())
+                        face_location.append(face.right())
+                        face_location.append(face.bottom())
+                        face_location.append(face.left())
+
+                        face_locations.append(face_location)
+                        
+                        # 얼굴 인코딩 계산
+                        face_descriptor = face_recognition_model.compute_face_descriptor(rgb_small_frame, shape)
+                        face_encoding = np.array(face_descriptor)
+                        
+                        # 알려진 얼굴 인코딩과 비교
+                        distances = [np.linalg.norm(face_encoding - known_encoding) for known_encoding in known_face_encodings]
+                        
                         name = "Unknown"
-
-                        if face_distances[best_match_index] < 0.35:
-                            name = known_face_names[best_match_index]
-
+                        if len(distances) > 0:
+                            best_match_index = np.argmin(distances)
+                            if distances[best_match_index] < 0.35:
+                                name = known_face_names[best_match_index]
+                        
                         face_names.append(name)
                         self.result_queue.put(name)
-
+                    
+        
                 process_this_frame = not process_this_frame
 
                 for (top, right, bottom, left), name in zip(face_locations, face_names):
@@ -692,35 +724,29 @@ class FaceRecognitionApp(QMainWindow, Ui_FaceRecognitionWindow):
             Qt.SmoothTransformation
         )
         self.icon_siren.setPixmap(scaled_pixmap)
+    
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Q:  # Q 키를 누르면
+            self.close()  # 프로그램 종료
 
     def closeEvent(self, event):
-        pass
-        # 사용자가 윈도우를 닫을 때 호출되는 메서드
-        # reply = QMessageBox.question(
-        #     self,
-        #     '종료 확인',
-        #     '애플리케이션을 종료하시겠습니까?',
-        #     QMessageBox.Yes | QMessageBox.No,
-        #     QMessageBox.No
-        # )
-
-        # if reply == QMessageBox.Yes:
-        #     try:
-        #         # 스레드 정지
-        #         if self.face_recognition_thread and self.face_recognition_thread.is_alive():
-        #             self.face_recognition_thread.stop()
-        #             self.face_recognition_thread.join(timeout=2)
-
-        #         if self.tcp_server and self.tcp_server.is_alive():
-        #             self.tcp_server.close_resources()
-        #             self.tcp_server.join(timeout=2)
-
-        #     except Exception as e:
-        #         print(f"Error during application closure: {e}")
+        try:
+            # 스레드 정지
+            if self.face_recognition_thread and self.face_recognition_thread.isRunning():
+                self.face_recognition_worker.stop()
+                self.face_recognition_thread.quit()
+                self.face_recognition_thread.wait()
             
-        #     event.accept()
-        # else:
-            # event.ignore()
+            if self.tcp_thread and self.tcp_thread.isRunning():
+                self.tcp_server.stop()
+                self.tcp_thread.quit()
+                self.tcp_thread.wait()
+                
+        except Exception as e:
+            print(f"Error during application closure: {e}")
+        
+        event.accept()
+
 
 def main():
     app = QApplication(sys.argv)
