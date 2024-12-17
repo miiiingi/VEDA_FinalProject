@@ -5,3 +5,4 @@
 __pycache__
 face_recognition_ui.py
 logs/result.csv
+asset/*.dat
