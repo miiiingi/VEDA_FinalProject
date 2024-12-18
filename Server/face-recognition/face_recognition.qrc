@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>asset/icon_door_idle.png</file>
+        <file>asset/icon_bell_idle.png</file>
+        <file>asset/icon_siren_idle.png</file>
+    </qresource>
+</RCC>
