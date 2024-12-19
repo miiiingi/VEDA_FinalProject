@@ -7,6 +7,8 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 #include <vector>
+#include <QElapsedTimer>
+#include <chrono>
 
 #include <dlib/image_processing/frontal_face_detector.h>  // 얼굴 검출기
 #include <dlib/image_processing.h>
@@ -22,20 +24,6 @@ void FaceRecognitionWorker::loadModels() {
     deserialize("../asset/shape_predictor_68_face_landmarks.dat") >> shapePredictor;
 }
 
-std::vector<dlib::matrix<dlib::rgb_pixel>> FaceRecognitionWorker::getFaceEncoding(const std::string& imagePath, frontal_face_detector& faceDetector,
-                                        shape_predictor& shapePredictor, anet_type& faceRecognitionModel) {
-        dlib::matrix<dlib::rgb_pixel> image;
-        load_image(image, imagePath);
-        auto faces = faceDetector(image);
-        if (faces.size() == 0) {
-            return {};
-        } else {
-                auto shape = shapePredictor(image, faces[0]);
-                matrix<rgb_pixel> face_chip;
-                extract_image_chip(image, get_face_chip_details(shape,150,0.25), face_chip);
-                return {face_chip}; 
-        }
-}
 std::vector<dlib::rectangle> FaceRecognitionWorker::getOpenCVFaceEncoding(const cv::Mat& frame, frontal_face_detector& faceDetector,
                                         shape_predictor& shapePredictor, anet_type& faceRecognitionModel) {
     cv::Mat resizedFrame;
@@ -53,8 +41,6 @@ std::vector<dlib::rectangle> FaceRecognitionWorker::getOpenCVFaceEncoding(const 
     return faceDetector(dlibImage);
 }
 
-
-
 void FaceRecognitionWorker::startRecognition() {
     running = true;
     cv::VideoCapture videoCapture(0);
@@ -62,31 +48,13 @@ void FaceRecognitionWorker::startRecognition() {
         emit errorOccurred("Failed to open camera.");
         return;
     }
-    std::vector<std::vector<matrix<float,0,1>>> knownFaceEncodings;
     std::cout << dlib::cuda::get_num_devices() << " CUDA devices detected." << std::endl;
-
     loadModels();
-
-    std::vector<std::string> knownFaceNames = { "junsup", "jihwan", "mingi" };
+    int frameCount = 0;
     
-    // Load known face encodings
-    std::vector<dlib::matrix<dlib::rgb_pixel>> junsupImage = getFaceEncoding("../asset/junsup.png", faceDetector, shapePredictor, faceRecognitionModel);
-    std::vector<dlib::matrix<dlib::rgb_pixel>> jihwanImage = getFaceEncoding("../asset/jihwan.png", faceDetector, shapePredictor, faceRecognitionModel);
-    std::vector<dlib::matrix<dlib::rgb_pixel>> mingiImage = getFaceEncoding("../asset/mingi.png", faceDetector, shapePredictor, faceRecognitionModel);
-    knownFaceEncodings.push_back(faceRecognitionModel(junsupImage));
-    knownFaceEncodings.push_back(faceRecognitionModel(jihwanImage));
-    knownFaceEncodings.push_back(faceRecognitionModel(mingiImage));
-    // std::vector<matrix<float,0,1>> face_descriptors = faceRecognitionModel(knownFaceEncodings[0]);
-    // knownFaceEncodings.push_back(getFaceEncoding(":/asset/jihwan.png", faceDetector, shapePredictor, faceRecognitionModel));
-    // knownFaceEncodings.push_back(getFaceEncoding(":/asset/mingi.png", faceDetector, shapePredictor, faceRecognitionModel));
-
-    // Print face descriptors for debugging
-    // for (const auto& descriptor : face_descriptors) {
-    //     std::cout << "Face descriptor: " << trans(descriptor) << std::endl;
-    // }
-
-    bool process_this_frame = true;
-
+    // QElapsedTimer 대신 std::chrono 사용 (Qt가 없는 경우를 위한 대체 방법)
+    auto timer_start = std::chrono::steady_clock::now();
+    
     while (running) {
         cv::Mat frame;
         if (!videoCapture.read(frame)) {
@@ -95,26 +63,34 @@ void FaceRecognitionWorker::startRecognition() {
         }
         if (process_this_frame){
             std::vector<dlib::rectangle> faces = getOpenCVFaceEncoding(frame, faceDetector, shapePredictor, faceRecognitionModel);
-            std::vector<> faceNames;
-            std::vector<> faceLocations;
             for(auto face: faces){
-                std::vector<> faceLocation;
-                std::cout << "Face found at x: " << face.left() << " y: " << face.top() << std::endl;
-                faceLocation.push_back(face.top());
-                faceLocation.push_back(face.right());
-                faceLocation.push_back(face.bottom());
-                faceLocation.push_back(face.left());
-
-                faceLocations.push_back(faceLocation);
-                auto shape = shapePredictor(image, faces[0]);
-                matrix<rgb_pixel> face_chip;
-                extract_image_chip(image, get_face_chip_details(shape,150,0.25), face_chip);
-
+                int left = face.left() * 4;
+                int top = face.top() * 4;
+                int right = face.right() * 4;
+                int bottom = face.bottom() * 4;
+                std::cout << "Face found at x: " << left << " y: " << top << std::endl;
+                // Draw rectangle around the face
+                cv::rectangle(frame, cv::Point(left, top), cv::Point(right, bottom), cv::Scalar(0, 0, 255), 4); // Increased thickness
+                cv::rectangle(frame, cv::Point(left, bottom - 35), cv::Point(right, bottom), cv::Scalar(0, 0, 255), cv::FILLED);
+                // Add text label
+                std::string name = "mingi"; // Placeholder for name
+                int baseline = 0;
+                cv::putText(frame, name, cv::Point(left + 6, bottom - 6), cv::FONT_HERSHEY_DUPLEX, 1.2, cv::Scalar(255, 255, 255), 2); // Increased font size and thickness
             }
-
             cv::resize(frame, frame, cv::Size(320, 240));
             emit frameUpdated(frame);
-
+        }
+        frameCount++;
+        
+        // FPS 계산을 위한 시간 측정
+        auto current_time = std::chrono::steady_clock::now();
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(current_time - timer_start).count();
+        
+        if (elapsed >= 1000) { // 1초가 지났다면
+            double fps = frameCount / (elapsed / 1000.0);
+            std::cout << "FPS: " << fps << std::endl;
+            frameCount = 0;
+            timer_start = current_time;
         }
     }
     videoCapture.release();
@@ -122,27 +98,6 @@ void FaceRecognitionWorker::startRecognition() {
 
 void FaceRecognitionWorker::stopRecognition() {
     running = false;
-}
-
-void FaceRecognitionWorker::processFrame(cv::Mat &frame) {
-    // cv::Mat resizedFrame;
-    // cv::resize(frame, resizedFrame, cv::Size(), 0.25, 0.25);
-    // cv::cvtColor(resizedFrame, resizedFrame, cv::COLOR_BGR2RGB);
-    // dlib::matrix<dlib::rgb_pixel> dlibImage(resizedFrame.rows, resizedFrame.cols);
-    // for (int r = 0; r < resizedFrame.rows; ++r) {
-    //     for (int c = 0; c < resizedFrame.cols; ++c) {
-    //         dlibImage(r, c) = dlib::rgb_pixel(resizedFrame.at<cv::Vec3b>(r, c)[0], 
-    //                                            resizedFrame.at<cv::Vec3b>(r, c)[1], 
-    //                                            resizedFrame.at<cv::Vec3b>(r, c)[2]);
-    //     }
-    // }
-
-    // std::vector<dlib::rectangle> faces = faceDetector(dlibImage);
-    // for (auto &face : faces) {
-    //     dlib::full_object_detection shape = shapePredictor(dlibImage, face);
-    //     faceDescriptor = faceRecognitionModel->compute_face_descriptor(dlibImage, shape)
-    //     cv::rectangle(frame, cv::Rect(face.left(), face.top(), face.width(), face.height()), cv::Scalar(0, 255, 0), 2);
-    // }
 }
 
 FaceRecognitionWindow::FaceRecognitionWindow(QWidget *parent)

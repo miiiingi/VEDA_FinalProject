@@ -61,7 +61,6 @@ public:
     void startRecognition();
     void stopRecognition();
 
-    std::vector<dlib::matrix<dlib::rgb_pixel>> getFaceEncoding(const std::string& imagePath, frontal_face_detector& faceDetector, shape_predictor& shapePredictor, anet_type& faceRecognitionModel);
     std::vector<dlib::rectangle> getOpenCVFaceEncoding(const cv::Mat& frame, frontal_face_detector& faceDetector, shape_predictor& shapePredictor, anet_type& faceRecognitionModel);
 
 signals:
@@ -70,11 +69,10 @@ signals:
 
 private:
     bool running;
+    bool process_this_frame = true;
     frontal_face_detector faceDetector;
     shape_predictor shapePredictor;
     anet_type faceRecognitionModel;
-
-    void processFrame(cv::Mat &frame);
 };
 
 class FaceRecognitionWindow : public QMainWindow
