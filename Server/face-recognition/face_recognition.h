@@ -13,6 +13,7 @@
 #include <dlib/image_processing/frontal_face_detector.h>  // 얼굴 검출기
 #include <dlib/image_processing.h>
 #include <dlib/image_io.h>
+#include <dlib/opencv.h>
 #include <dlib/dnn.h>
 
 #include "ui_face_recognition.h" // Qt Designer가 생성한 UI 헤더 포함

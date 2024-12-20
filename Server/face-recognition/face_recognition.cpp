@@ -14,6 +14,7 @@
 #include <dlib/image_processing.h>
 #include <dlib/image_io.h>
 #include <dlib/dnn.h>
+#include <dlib/opencv.h>
 
 
 FaceRecognitionWorker::FaceRecognitionWorker(QObject *parent) : QObject(parent), running(false) {}
@@ -29,16 +30,9 @@ std::vector<dlib::rectangle> FaceRecognitionWorker::getOpenCVFaceEncoding(const 
     cv::Mat resizedFrame;
     cv::resize(frame, resizedFrame, cv::Size(), 0.25, 0.25);
     cv::cvtColor(resizedFrame, resizedFrame, cv::COLOR_BGR2RGB);
-    dlib::matrix<dlib::rgb_pixel> dlibImage(resizedFrame.rows, resizedFrame.cols);
-    for (int r = 0; r < resizedFrame.rows; ++r) {
-        for (int c = 0; c < resizedFrame.cols; ++c) {
-            dlibImage(r, c) = dlib::rgb_pixel(resizedFrame.at<cv::Vec3b>(r, c)[0], 
-                                               resizedFrame.at<cv::Vec3b>(r, c)[1], 
-                                               resizedFrame.at<cv::Vec3b>(r, c)[2]);
-        }
-    }
+    dlib::cv_image<dlib::rgb_pixel> cimg(resizedFrame);
 
-    return faceDetector(dlibImage);
+    return faceDetector(cimg);
 }
 
 void FaceRecognitionWorker::startRecognition() {
