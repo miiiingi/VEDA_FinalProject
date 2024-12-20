@@ -27,10 +27,8 @@ void FaceRecognitionWorker::loadModels() {
 
 std::vector<dlib::rectangle> FaceRecognitionWorker::getOpenCVFaceEncoding(const cv::Mat& frame, frontal_face_detector& faceDetector,
                                         shape_predictor& shapePredictor, anet_type& faceRecognitionModel) {
-    cv::Mat resizedFrame;
-    cv::resize(frame, resizedFrame, cv::Size(), 0.25, 0.25);
-    cv::cvtColor(resizedFrame, resizedFrame, cv::COLOR_BGR2RGB);
-    dlib::cv_image<dlib::rgb_pixel> cimg(resizedFrame);
+
+    dlib::cv_image<dlib::bgr_pixel> cimg(frame);
 
     return faceDetector(cimg);
 }
@@ -42,6 +40,11 @@ void FaceRecognitionWorker::startRecognition() {
         emit errorOccurred("Failed to open camera.");
         return;
     }
+    int frameWidth = 320;
+    int frameHeight = 240;
+    videoCapture.set(cv::CAP_PROP_FRAME_WIDTH, frameWidth);
+    videoCapture.set(cv::CAP_PROP_FRAME_HEIGHT, frameHeight);
+
     std::cout << dlib::cuda::get_num_devices() << " CUDA devices detected." << std::endl;
     loadModels();
     int frameCount = 0;
@@ -58,18 +61,18 @@ void FaceRecognitionWorker::startRecognition() {
         if (process_this_frame){
             std::vector<dlib::rectangle> faces = getOpenCVFaceEncoding(frame, faceDetector, shapePredictor, faceRecognitionModel);
             for(auto face: faces){
-                int left = face.left() * 4;
-                int top = face.top() * 4;
-                int right = face.right() * 4;
-                int bottom = face.bottom() * 4;
-                std::cout << "Face found at x: " << left << " y: " << top << std::endl;
+                int left = face.left();
+                int top = face.top();
+                int right = face.right();
+                int bottom = face.bottom();
+
                 // Draw rectangle around the face
-                cv::rectangle(frame, cv::Point(left, top), cv::Point(right, bottom), cv::Scalar(0, 0, 255), 4); // Increased thickness
-                cv::rectangle(frame, cv::Point(left, bottom - 35), cv::Point(right, bottom), cv::Scalar(0, 0, 255), cv::FILLED);
+                cv::rectangle(frame, cv::Point(left, top), cv::Point(right, bottom), cv::Scalar(0, 0, 255), 2); // Increased thickness
+                cv::rectangle(frame, cv::Point(left, bottom - 20), cv::Point(right, bottom), cv::Scalar(0, 0, 255), cv::FILLED); // Reduced height of the box
                 // Add text label
                 std::string name = "mingi"; // Placeholder for name
                 int baseline = 0;
-                cv::putText(frame, name, cv::Point(left + 6, bottom - 6), cv::FONT_HERSHEY_DUPLEX, 1.2, cv::Scalar(255, 255, 255), 2); // Increased font size and thickness
+                cv::putText(frame, name, cv::Point(left + 6, bottom - 6), cv::FONT_HERSHEY_DUPLEX, 0.4, cv::Scalar(255, 255, 255), 1); // Decreased font size
             }
             cv::resize(frame, frame, cv::Size(320, 240));
             emit frameUpdated(frame);
@@ -186,7 +189,12 @@ void FaceRecognitionWindow::displayFrame(const cv::Mat &frame) {
     cv::Mat rgbFrame;
     cv::cvtColor(frame, rgbFrame, cv::COLOR_BGR2RGB);
     QImage qImage(rgbFrame.data, rgbFrame.cols, rgbFrame.rows, rgbFrame.step, QImage::Format_RGB888);
-    ui->video_label->setPixmap(QPixmap::fromImage(qImage));
+    QPixmap pixmap = QPixmap::fromImage(qImage);
+    ui->video_label->setPixmap(pixmap.scaled(
+        ui->video_label->size(),
+        Qt::KeepAspectRatio,
+        Qt::SmoothTransformation
+    ));
 }
 
 void FaceRecognitionWindow::on_stop_button_clicked()
