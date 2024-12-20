@@ -190,6 +190,8 @@ class FaceRecognitionThread(QObject):
             ]
             
             process_this_frame = True
+            frame_count = 0
+            start_time = time.time()
             while self.running:
                 ret, frame = video_capture.read()
                 if not ret:
@@ -259,6 +261,14 @@ class FaceRecognitionThread(QObject):
 
                 frame = cv2.resize(frame, (320, 240))
                 self.image_update_signal.emit(frame)
+                
+                frame_count += 1
+                elapsed_time = time.time() - start_time
+                if elapsed_time >= 1.0:
+                    fps = frame_count / elapsed_time
+                    print(f"FPS: {fps}")
+                    frame_count = 0
+                    start_time = time.time()
                 
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     self.running = False
