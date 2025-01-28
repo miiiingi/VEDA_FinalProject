@@ -10,9 +10,6 @@
   <summary>Table of Contents</summary>
   <ol>
     <li><a href="#about-the-project"> ➤ 프로젝트 소개</a></li>
-    <li><a href="#prerequisites"> ➤ 기능 명세</a></li>
-    <li><a href="#folder-structure"> ➤ 프로젝트 설계</a></li>
-    <li><a href="#dataset"> ➤ 기능 설명</a></li>
     <li><a href="#roadmap"> ➤ 시연 영상</a></li>
   </ol>
 </details>
